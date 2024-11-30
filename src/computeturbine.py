@@ -23,10 +23,10 @@ class ComputeTurbine(om.ExplicitComponent):
         self.add_input('num_engines', val=1, desc='number of engines', units=None)
         self.add_input('dt', val=np.ones(self.options['n']), desc='time step', units='s')
         self.add_input('psfc', val=np.ones(self.options['n']), desc='power specific fuel consumption', units='kg/s/W')
-        self.add_input('eta_gen', val=np.ones(self.options['n']), desc='generator efficiency', units=None) 
-        self.add_input('eta_cbl', val=np.ones(self.options['n']), desc='cable efficiency', units=None)
-        self.add_input('eta_pe', val=np.ones(self.options['n']), desc='power electronics efficiency', units=None)
-        self.add_input('eta_motor', val=np.ones(self.options['n']), desc='motor efficiency', units=None)
+        self.add_input('eta_gen', val=1, desc='generator efficiency', units=None)
+        self.add_input('eta_cbl', val=1, desc='cable efficiency', units=None)
+        self.add_input('eta_pe', val=1, desc='power electronics efficiency', units=None)
+        self.add_input('eta_motor', val=1, desc='motor efficiency', units=None)
         self.add_input('hy', val=np.ones(self.options['n']), desc='hybridization ratio', units=None)
 
         # Outputs

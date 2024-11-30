@@ -45,7 +45,8 @@ class ComputeAero(om.ExplicitComponent):
 
 
         mach = vtas / c
-        CD_wave = wave_a * (max(mach/MCrit,1)-1) ** wave_b
+
+        CD_wave = np.where(mach > MCrit, wave_a * (mach/MCrit-1) ** wave_b, 0)
         CD = Cd0 + CL**2 / (np.pi * e * AR) + CD_wave
 
 

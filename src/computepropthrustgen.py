@@ -12,8 +12,6 @@ class ComputePropThrustGen(om.ImplicitComponent):
     """
 
     def initialize(self):
-
-        self.options.declare('eta_prop', default=0.8, desc='propeller efficiency')
         self.options.declare('n', default=1, desc='number of data points')
 
        
@@ -26,20 +24,19 @@ class ComputePropThrustGen(om.ImplicitComponent):
         self.add_input('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
         self.add_input('unit_shaft_pow_gen', val= np.ones(self.options['n']), desc='power generated per engine', units='W')
         self.add_input('num_engines', val=1, desc='number of engines', units=None)
-        self.add_input('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
+        self.add_input('vtas', val=np.ones(self.options['n']), desc='true airspeed', units='m/s')
+        self.add_input('eta_prop', val=0.8, desc='propeller efficiency', units=None)
 
         # Outputs
-        self.add_output('total_thrust_gen', val= np.ones(self.options['n']), desc='total aircraft thrust generated', units='N')
+        self.add_output('total_thrust_gen', val= 1e3* np.ones(self.options['n']), desc='total aircraft thrust generated', units='N')
 
 
         self.declare_partials('*', '*', method='fd')
 
     def apply_nonlinear(self, inputs, outputs, residuals):
 
-        # Unpack options
-        eta_prop = self.options['eta_prop']
-    
         # Unpack inputs
+        eta_prop = inputs['eta_prop']
         d_blade = inputs['d_blade']
         d_hub = inputs['d_hub']
         rho = inputs['rho']

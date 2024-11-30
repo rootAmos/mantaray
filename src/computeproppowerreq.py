@@ -13,7 +13,6 @@ class ComputePropPowerReq(om.ExplicitComponent):
 
     def initialize(self):
 
-        self.options.declare('eta_prop', default=0.8, desc='propeller efficiency', units=None) 
         self.options.declare('n', default=1, desc='number of data points')
 
        
@@ -27,7 +26,7 @@ class ComputePropPowerReq(om.ExplicitComponent):
         self.add_input('total_thrust_req', val= np.ones(self.options['n']), desc='total aircraft thrust required', units='N')
         self.add_input('num_engines', val=1, desc='number of engines', units=None)
         self.add_input('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
-
+        self.options.declare('eta_prop', default=0.8, desc='propeller efficiency', units=None) 
         # Outputs
         self.add_output('unit_shaft_pow_req', val= np.ones(self.options['n']), desc='power required per engine', units='W')
 
@@ -36,10 +35,8 @@ class ComputePropPowerReq(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
 
-        # Unpack options
-        eta_prop = self.options['eta_prop']
-    
-        # Unpack inputs
+        # Unpack inputs    
+        eta_prop = inputs['eta_prop']
         d_blade = inputs['d_blade']
         d_hub = inputs['d_hub']
         rho = inputs['rho']

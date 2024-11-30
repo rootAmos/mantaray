@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib
 import pandas as pd
 import scipy
-import openmdao as om
+import openmdao.api as om
+from openmdao.api import NewtonSolver, DirectSolver, ArmijoGoldsteinLS, Problem, Group
 
 
 from src.computecl import ComputeCL
@@ -12,7 +13,8 @@ from src.computeturbine import ComputeTurbine
 from src.computebatterydischarge import ComputeBatteryDischarge
 from src.computeaero import ComputeAero
 from src.computepropthrustgen import ComputePropThrustGen   
-
+from src.computevelocities import ComputeVelocities
+from src.computeatmos import ComputeAtmos
 
 """
 A python tool to size electric power trains and electric subsystems for aircraft.
@@ -31,10 +33,24 @@ class Performance(om.Group):
 
     def initialize(self):
         self.options.declare('n', default=1, desc='number of points')
+        self.options.declare('g', default=9.806, desc='gravitational acceleration')
+        self.options.declare('wave_a', default=0.825, desc='wave drag a term')
+        self.options.declare('wave_b', default=2.61, desc='wave drag b term')
+        self.options.declare('MCrit', default=0.9, desc='critical mach number')
 
     def setup(self):
+
+        self.add_subsystem(name='ComputeAtmos',
+                           subsys=ComputeAtmos(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+
         self.add_subsystem(name='ComputeAero',
-                           subsys=ComputeAero(n=self.options['n']),
+                           subsys=ComputeAero(
+                               n=self.options['n'], 
+                               wave_a=self.options['wave_a'], 
+                               wave_b=self.options['wave_b'], 
+                               MCrit=self.options['MCrit']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
 
@@ -44,8 +60,13 @@ class Performance(om.Group):
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
 
+        self.add_subsystem(name='ComputeVelocities',
+                           subsys=ComputeVelocities(n=self.options['n'], g=self.options['g']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+
         self.add_subsystem(name='ComputeCL',
-                           subsys=ComputeCL(n=self.options['n']),
+                           subsys=ComputeCL(n=self.options['n'], g=self.options['g']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
         
@@ -81,16 +102,16 @@ class Performance(om.Group):
 
 if __name__ == "__main__":
     import numpy as np
-    from omxdsm import write_xdsm
+    # from omxdsm import write_xdsm
 
     # generate path where xlsx with all data can be found
     n = 10
 
     ivc = om.IndepVarComp()
 
-    mass = np.ones(n) * 8600 # mass flow in to compressor
+    mass =  8600 # mass flow in to compressor
     S =  30 # wing area
-    b = 10 # wing span
+    b = 20 # wing span
     AR = b**2 / S # wing aspect ratio
 
 
@@ -100,9 +121,10 @@ if __name__ == "__main__":
     # Position
     ivc.add_output('x0', val=0, units='m', desc='initial position')
     ivc.add_output('z0', val=0, units='m', desc='initial altitude')
+    ivc.add_output('t0', val=0, units='s', desc='initial time')
 
     # Velocity
-    ivc.add_output('u0', val=0, units='m/s', desc='initial velocity in body fixed axis x direction')
+    ivc.add_output('u0', val=50, units='m/s', desc='initial velocity in body fixed axis x direction')
     ivc.add_output('w0', val=0, units='m/s', desc='initial velocity in body fixed axis z direction')
     ivc.add_output('gamma', val=0 * np.ones(n), units='rad', desc='flight path angle')
 
@@ -112,12 +134,14 @@ if __name__ == "__main__":
     # Aircraft geometry
     ivc.add_output('S', val=S , units='m**2', desc='wing area')
     ivc.add_output('AR', val=AR , units=None, desc='wing aspect ratio')
+    ivc.add_output('mass', val=mass, units='kg', desc='aircraft mass')
+
 
     # Aero
     ivc.add_output('alpha_0', val=-3 * np.pi / 180 , units='rad', desc='zero-lift angle of attack')   
     ivc.add_output('alpha_i', val=2 * np.pi / 180 , units='rad', desc='incidence angle')   
     ivc.add_output('CLa', val=5.5, units='1/rad', desc='lift curve slope')
-    ivc.add_output('Cd0', val=0.02 * np.ones(n), units=None, desc='zero-lift drag coefficient')
+    ivc.add_output('Cd0', val=0.02, units=None, desc='zero-lift drag coefficient')
     ivc.add_output('e', val=0.8, units=None, desc='oswald efficiency factor')
 
     # Powertrain
@@ -129,7 +153,7 @@ if __name__ == "__main__":
     ivc.add_output('eta_duct', val=0.8, units=None, desc='duct efficiency')
     ivc.add_output('eta_fan', val=0.8, units=None, desc='fan efficiency')   
 
-    ivc.add_output('batt_cap', val=1000, units='Wh', desc='battery capacity')
+    ivc.add_output('batt_cap', val=1000 * 3600, units='J', desc='battery capacity')
     ivc.add_output('soc_0', val=1, units=None, desc='initial battery state of charge')
     ivc.add_output('num_engines', val=2, units=None, desc='number of engines')
     ivc.add_output('d_blade', val=1, units='m', desc='blade diameter')

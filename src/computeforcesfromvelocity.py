@@ -5,9 +5,9 @@ import openmdao.api as om
 
 class ComputeVelocityFromForces(om.ExplicitComponent):
 
-    def iniappltialize(self):
-        pass
-
+    def initialize(self):
+        self.options.declare('n', default=1, desc='number of data points')  
+        self.options.declare('g', default=9.806, desc='gravitational acceleration')
 
     def setup(self):
 

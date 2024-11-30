@@ -3,10 +3,11 @@ import openmdao.api as om
 
 
 
-class ComputeVelocityFromForces(om.ExplicitComponent):
+class ComputeVelocities(om.ExplicitComponent):
 
     def initialize(self):
         self.options.declare('n', default=1, desc='number of data points')
+        self.options.declare('g', default=9.806, desc='gravitational acceleration')
 
 
     def setup(self):
@@ -15,7 +16,7 @@ class ComputeVelocityFromForces(om.ExplicitComponent):
         self.add_input('Lift', val= np.ones(self.options['n']), desc='lift force', units='N')
         self.add_input('Drag', val= np.ones(self.options['n']), desc='drag force', units='N')
         self.add_input('Thrust', val= np.ones(self.options['n']), desc='thrust force', units='N')
-        self.add_input('mass', val= np.ones(self.options['n']), desc='mass', units='kg')
+        self.add_input('mass', val=1, desc='mass', units='kg')
         self.add_input('gamma', val= np.ones(self.options['n']), desc='flight path angle', units='rad')
         self.add_input('dt', val= np.ones(self.options['n']), desc='time step', units='s')
         self.add_input('u0', val=0, desc='initial velocity in x-axis of body-fixed frame', units='m/s')

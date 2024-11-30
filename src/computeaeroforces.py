@@ -5,21 +5,22 @@ import openmdao.api as om
 
 class ComputeAeroForces(om.ExplicitComponent):
 
-    def iniappltialize(self):
-        pass
+    def initialize(self):
+        self.options.declare('n', default=1, desc='number of data points')  
 
 
     def setup(self):
 
         # Inputs    
-        self.add_input('CL', val=0, desc='lift coefficient', units=None)
-        self.add_input('CD', val=0, desc='drag coefficient', units=None)
-        self.add_input('vtas', val=0, desc='true airspeed', units='m/s')
-        self.add_input('rho', val=0, desc='air density', units='kg/m**3')
+        self.add_input('CL', val= np.ones(self.options['n']), desc='lift coefficient', units=None)
+        self.add_input('CD', val= np.ones(self.options['n']), desc='drag coefficient', units=None)
+        self.add_input('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
+        self.add_input('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
+        self.add_input('S', val=1, desc='wing area', units='m**2')
 
         # Outputs
-        self.add_output('Lift', val=0, desc='lift force', units='N')
-        self.add_output('Drag', val=0, desc='drag force', units='N')
+        self.add_output('Lift', val= np.ones(self.options['n']), desc='lift force', units='N')
+        self.add_output('Drag', val= np.ones(self.options['n']), desc='drag force', units='N')
 
         self.declare_partials('*', '*', method='fd')
 
@@ -30,10 +31,11 @@ class ComputeAeroForces(om.ExplicitComponent):
         CD = inputs['CD']
         rho = inputs['rho']
         vtas = inputs['vtas']
+        S = inputs['S']
 
 
-        Lift = 0.5 * rho * vtas**2 * CL
-        Drag = 0.5 * rho * vtas**2 * CD
+        Lift = 0.5 * rho * vtas**2 * S * CL
+        Drag = 0.5 * rho * vtas**2 * S * CD
 
 
         # Pack outputs
