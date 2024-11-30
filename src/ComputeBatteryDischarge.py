@@ -1,0 +1,105 @@
+import numpy as np  
+import openmdao.api as om
+
+
+
+class ComputeBatteryDischarge(om.ExplicitComponent):
+    """
+    Compute the battery discharge.
+
+    References
+    [1] GA Guddmundsson. "General Aviation Aircraft Design".
+    """
+
+    def initialize(self):
+        pass
+       
+
+    def setup(self):
+
+        # Inputs    
+        self.add_input('unit_shaft_pow_req', val=0, desc='power required per engine', units='W')
+        self.add_input('num_engines', val=0, desc='number of engines', units=None)
+        self.add_input('dt', val=0, desc='time step', units='s')
+        self.add_input('soc_0', val=0, desc='initial battery state of charge', units=None)
+        self.add_input('batt_cap', val=0, desc='battery capacity', units='Wh')
+        self.add_input('eta_batt', val=0, desc='battery efficiency', units=None) 
+        self.add_input('eta_motor', val=0, desc='motor efficiency', units=None)
+        self.add_input('eta_pe', val=0, desc='power electronics efficiency', units=None)
+        self.add_input('eta_cbl', val=0, desc='cables efficiency', units=None)
+        self.add_input('hy', val=0, desc='hybridization ratio', units=None)
+
+        # Outputs
+        self.add_output('soc', val=0, desc='battery state of charge', units=None)
+
+
+        self.declare_partials('*', '*', method='fd')
+
+    def compute(self, inputs, outputs):
+
+        # Unpack Inputs
+        eta_batt = inputs['eta_batt']
+        eta_motor = inputs['eta_motor']
+        eta_pe = inputs['eta_pe']
+        eta_cbl = inputs['eta_cbl']
+        unit_shaft_pow_req = inputs['unit_shaft_pow_req']
+        num_engines = inputs['num_engines']
+        dt = inputs['dt']
+        soc_0 = inputs['soc_0']
+        batt_cap = inputs['batt_cap']
+        hy = inputs['hy']
+
+        # Battery power required (W)
+        batt_pow_req = unit_shaft_pow_req * num_engines / eta_batt / eta_motor / eta_pe / eta_cbl * hy
+
+        # Battery discharge (J)
+        batt_nrg = np.cumsum(batt_pow_req * dt)
+
+        # Battery discharge (Wh)
+        batt_dischg = batt_nrg / 3600   
+
+        # Battery state of charge
+        soc = (soc_0 * batt_cap - batt_dischg) / batt_cap
+
+        # Pack outputs
+        outputs['soc'] = soc    
+
+
+
+if __name__ == "__main__":
+    import openmdao.api as om
+
+    p = om.Problem()
+    model = p.model
+
+    ivc = om.IndepVarComp()
+    ivc.add_output('unit_shaft_pow_req', 1000, units='W')
+    ivc.add_output('num_engines', 2, units=None)
+    ivc.add_output('dt', 1, units='s')
+    ivc.add_output('soc_0', 0.5, units=None)
+    ivc.add_output('batt_cap', 1000, units='Wh')
+    ivc.add_output('eta_batt', 0.8, units=None)
+    ivc.add_output('eta_motor', 0.93, units=None)
+    ivc.add_output('eta_pe', 0.95, units=None)
+    ivc.add_output('eta_cbl', 0.95, units=None)
+    ivc.add_output('hy', 0.5, units=None)
+
+
+    model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
+    model.add_subsystem('ComputeBatteryDischarge', ComputeBatteryDischarge(), promotes_inputs=['*'])
+
+    model.nonlinear_solver = om.NewtonSolver()
+    model.linear_solver = om.DirectSolver()
+
+    model.nonlinear_solver.options['iprint'] = 2
+    model.nonlinear_solver.options['maxiter'] = 200
+    model.nonlinear_solver.options['solve_subsystems'] = True
+    model.nonlinear_solver.linesearch = om.ArmijoGoldsteinLS()
+
+    p.setup()
+
+    #om.n2(p)
+    p.run_model()
+
+    print('soc = ', p['ComputeBatteryDischarge.soc'])
+

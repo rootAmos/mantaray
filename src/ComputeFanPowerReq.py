@@ -12,9 +12,7 @@ class ComputeFanPowerReq(om.ExplicitComponent):
     """
 
     def initialize(self):
-
-        self.options.declare('eta_fan', default=0.8, desc='fan efficiency', units=None)     
-        self.options.declare('eta_duct', default=0.8, desc='duct efficiency', units=None)
+        pass
        
 
     def setup(self):
@@ -27,6 +25,8 @@ class ComputeFanPowerReq(om.ExplicitComponent):
         self.add_input('num_engines', val=0, desc='number of engines', units=None)
         self.add_input('vtas', val=0, desc='true airspeed', units='m/s')
         self.add_input('epsilon_r', val=0, desc='expansion ratio', units=None)
+        self.add_input('eta_fan', val=0, desc='fan efficiency', units=None)     
+        self.add_input('eta_duct', val=0, desc='duct efficiency', units=None)
 
         # Outputs
         self.add_output('unit_shaft_pow_req', val=0, desc='power required per engine', units='W')
@@ -36,9 +36,6 @@ class ComputeFanPowerReq(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
 
-        # Unpack options
-        eta_prop = self.options['eta_prop']
-    
         # Unpack inputs
         d_blade = inputs['d_blade']
         d_hub = inputs['d_hub']
@@ -47,6 +44,8 @@ class ComputeFanPowerReq(om.ExplicitComponent):
         num_engines = inputs['num_engines']
         vtas = inputs['vtas']
         epsilon_r = inputs['epsilon_r']
+        eta_fan = inputs['eta_fan']
+        eta_duct = inputs['eta_duct']
 
         unit_thrust_req = total_thrust_req / num_engines  
         diskarea = np.pi * ((d_blade/2)**2 - (d_hub/2)**2)
@@ -64,7 +63,7 @@ class ComputeFanPowerReq(om.ExplicitComponent):
         eta_prplsv = 2 / (1 + v3/vtas)    
 
         # Compute the power required [1] Eq 15-78
-        unit_shaft_pow_req = unit_propulsive_pow_req / eta_prop / eta_prplsv
+        unit_shaft_pow_req = unit_propulsive_pow_req / eta_fan / eta_duct / eta_prplsv
 
         # Pack outputs
         outputs['unit_shaft_pow_req'] = unit_shaft_pow_req
@@ -84,6 +83,8 @@ if __name__ == "__main__":
     ivc.add_output('num_engines', 2, units=None)
     ivc.add_output('vtas', 100, units='m/s')
     ivc.add_output('epsilon_r', 1.5, units=None) 
+    ivc.add_output('eta_fan', 0.9, units=None)     
+    ivc.add_output('eta_duct', 0.9, units=None)
 
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])

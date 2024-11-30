@@ -12,9 +12,8 @@ class ComputeFanThrustGen(om.ImplicitComponent):
     """
 
     def initialize(self):
+        pass
 
-        self.options.declare('eta_fan', default=0.9, desc='fan efficiency')
-        self.options.declare('eta_duct', default=0.9, desc='duct efficiency')
        
 
     def setup(self):
@@ -27,6 +26,9 @@ class ComputeFanThrustGen(om.ImplicitComponent):
         self.add_input('num_engines', val=0, desc='number of engines', units=None)
         self.add_input('vtas', val=0, desc='true airspeed', units='m/s')
         self.add_input('epsilon_r', val=0, desc='expansion ratio', units=None)
+        
+        self.add_input('eta_fan', val=0, desc='fan efficiency')
+        self.add_input('eta_duct', val=0, desc='duct efficiency')
 
         # Outputs
         self.add_output('total_thrust_gen', val=0, desc='power required per engine', units='W')
@@ -37,10 +39,8 @@ class ComputeFanThrustGen(om.ImplicitComponent):
     def apply_nonlinear(self, inputs, outputs, residuals):
 
         # Unpack options
-        eta_fan  = self.options['eta_fan']
-        eta_duct = self.options['eta_duct']
-    
-        # Unpack inputs
+        eta_fan  = inputs['eta_fan']
+        eta_duct = inputs['eta_duct']
         d_blade = inputs['d_blade']
         d_hub = inputs['d_hub']
         rho = inputs['rho']
@@ -86,7 +86,9 @@ if __name__ == "__main__":
     ivc.add_output('unit_shaft_pow_gen', 500e3, units='W')
     ivc.add_output('num_engines', 2, units=None)
     ivc.add_output('vtas', 100, units='m/s')
-    ivc.add_output('epsilon_r', 1.5, units=None) 
+    ivc.add_output('epsilon_r', 1.5, units=None)
+    ivc.add_output('eta_fan', 0.9, units=None)
+    ivc.add_output('eta_duct', 0.9, units=None)
 
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
