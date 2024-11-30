@@ -14,6 +14,7 @@ class ComputePropThrustGen(om.ImplicitComponent):
     def initialize(self):
 
         self.options.declare('eta_prop', default=0.8, desc='propeller efficiency')
+        self.options.declare('n', default=1, desc='number of data points')
 
        
 
@@ -22,13 +23,13 @@ class ComputePropThrustGen(om.ImplicitComponent):
         # Inputs    
         self.add_input('d_blade', val=0, desc='blade diameter', units='m')
         self.add_input('d_hub', val=0, desc='hub diameter', units='m')
-        self.add_input('rho', val=0, desc='air density', units='kg/m**3')
-        self.add_input('unit_shaft_pow_gen', val=0, desc='power generated per engine', units='W')
-        self.add_input('num_engines', val=0, desc='number of engines', units=None)
-        self.add_input('vtas', val=0, desc='true airspeed', units='m/s')
+        self.add_input('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
+        self.add_input('unit_shaft_pow_gen', val= np.ones(self.options['n']), desc='power generated per engine', units='W')
+        self.add_input('num_engines', val=1, desc='number of engines', units=None)
+        self.add_input('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
 
         # Outputs
-        self.add_output('total_thrust_gen', val=0, desc='total aircraft thrust generated', units='N')
+        self.add_output('total_thrust_gen', val= np.ones(self.options['n']), desc='total aircraft thrust generated', units='N')
 
 
         self.declare_partials('*', '*', method='fd')
@@ -104,4 +105,3 @@ if __name__ == "__main__":
     p.run_model()
 
     print('total_thrust_gen = ', p['ComputePropThrustGen.total_thrust_gen'])
-

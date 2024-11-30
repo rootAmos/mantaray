@@ -5,26 +5,26 @@ import openmdao.api as om
 
 class ComputeAero(om.ExplicitComponent):
 
-    def iniappltialize(self):
+    def initialize(self):
 
         self.options.declare('wave_a', default=0.825, desc='wave drag a term')
         self.options.declare('wave_b', default=2.61, desc='wave drag b term')
         self.options.declare('MCrit', default=0.9, desc='critical Mach number')
-
+        self.options.declare('n', default=1, desc='number of data points')
 
     def setup(self):
 
         # Inputs    
-        self.add_input('Cd0', val=0, desc='zero-lift drag coefficient', units=None)
-        self.add_input('e', val=0, desc='oswald efficiency factor', units=None)
-        self.add_input('AR', val=0, desc='aspect ratio', units=None)
-        self.add_input('c', val=0, desc='speed of sound', units='m/s')
-        self.add_input('vtas', val=0, desc='true airspeed', units='m/s')
-        self.add_input('CL', val=0, desc='lift coefficient', units=None)
+        self.add_input('Cd0', val=1, desc='zero-lift drag coefficient', units=None)
+        self.add_input('e', val=1, desc='oswald efficiency factor', units=None)
+        self.add_input('AR', val=1, desc='aspect ratio', units=None)
+        self.add_input('c', val=1, desc='speed of sound', units='m/s')
+        self.add_input('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
+        self.add_input('CL', val= np.ones(self.options['n']), desc='lift coefficient', units=None)
 
         # Outputs
-        self.add_output('CD', val=0, desc='drag coefficient', units=None)
-        self.add_output('CD_wave', val=0, desc='wave drag coefficient', units=None)
+        self.add_output('CD', val= np.ones(self.options['n']), desc='drag coefficient', units=None)
+        self.add_output('CD_wave', val= np.ones(self.options['n']), desc='wave drag coefficient', units=None)
 
         self.declare_partials('*', '*', method='fd')
 
