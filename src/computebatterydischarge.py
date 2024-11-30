@@ -12,23 +12,22 @@ class ComputeBatteryDischarge(om.ExplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare('n', default=1, desc='number of data points')
-        
+        pass
        
 
     def setup(self):
 
         # Inputs    
-        self.add_input('unit_shaft_pow_req', val= np.ones(self.options['n']), desc='power required per engine', units='W')
-        self.add_input('num_engines', val=1, desc='number of engines', units=None)
-        self.add_input('dt', val= np.ones(self.options['n']), desc='time step', units='s')
-        self.add_input('soc_0', val=1, desc='initial battery state of charge', units=None)
-        self.add_input('batt_cap', val=1, desc='battery capacity', units='Wh')
-        self.add_input('eta_batt', val=1, desc='battery efficiency', units=None) 
-        self.add_input('eta_motor', val=1, desc='motor efficiency', units=None)
-        self.add_input('eta_pe', val=1, desc='power electronics efficiency', units=None)
-        self.add_input('eta_cbl', val=1, desc='cables efficiency', units=None)
-        self.add_input('hy', val= np.ones(self.options['n']), desc='hybridization ratio', units=None)
+        self.add_input('unit_shaft_pow_req', val=0, desc='power required per engine', units='W')
+        self.add_input('num_engines', val=0, desc='number of engines', units=None)
+        self.add_input('dt', val=0, desc='time step', units='s')
+        self.add_input('soc_0', val=0, desc='initial battery state of charge', units=None)
+        self.add_input('batt_cap', val=0, desc='battery capacity', units='Wh')
+        self.add_input('eta_batt', val=0, desc='battery efficiency', units=None) 
+        self.add_input('eta_motor', val=0, desc='motor efficiency', units=None)
+        self.add_input('eta_pe', val=0, desc='power electronics efficiency', units=None)
+        self.add_input('eta_cbl', val=0, desc='cables efficiency', units=None)
+        self.add_input('hy', val=0, desc='hybridization ratio', units=None)
 
         # Outputs
         self.add_output('soc', val=0, desc='battery state of charge', units=None)

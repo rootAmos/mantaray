@@ -5,27 +5,23 @@ import openmdao.api as om
 
 class ComputeKinematics(om.ExplicitComponent):
 
-    def initialize(self):
-        self.options.declare('n', default=1, desc='number of data points')
+    def iniappltialize(self):
+        pass
+
 
     def setup(self):
 
         # Inputs    
-        self.add_input('gamma', val= np.zeros(self.options['n']), desc='flight path angle', units='rad')
-        self.add_input('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
-        self.add_input('dt', val= np.ones(self.options['n']), desc='time step', units='s')
+        self.add_input('gamma', val=0, desc='flight path angle', units='rad')
+        self.add_input('vtas', val=0, desc='true airspeed', units='m/s')
+        self.add_input('dt', val=0, desc='time step', units='s')
         self.add_input('x0', val=0, desc='initial distance', units='m')
         self.add_input('z0', val=0, desc='initial altitude', units='m')
-        self.add_input('t0', val=0, desc='starting time', units='s')
 
         # Outputs
-        self.add_output('t', val=0, desc='time', units='s')
-        self.add_output('t1', val=0, desc='end time', units='s')
-        self.add_output('x', val=0, desc='trajectory in the x-axis', units='m')
-        self.add_output('z', val=0, desc='trajectory in the z-axis', units='m')
-        self.add_output('x1', val=0, desc='end position in the x-axis', units='m')
-        self.add_output('z1', val=0, desc='end position in the z-axis', units='m')
-        
+        self.add_output('distance', val=0, desc='distance', units='m')
+        self.add_output('altitude', val=0, desc='altitude', units='m')
+        self.add_output('time', val=0, desc='time', units='s')
 
         self.declare_partials('*', '*', method='fd')
 
@@ -37,24 +33,22 @@ class ComputeKinematics(om.ExplicitComponent):
         dt = inputs['dt']
         x0 = inputs['x0']
         z0 = inputs['z0']
-        t0 = inputs['t0']
 
         # Compute horizontal and vertical velocities
         vx = vtas * np.cos(gamma)
         vz = vtas * np.sin(gamma)
 
         # Compute distance, time, and altitude
-        x = np.cumsum(vx * dt) + x0
-        t = np.cumsum(dt) + t0
-        z = np.cumsum(vz * dt) + z0
+        distance = np.cumsum(vx * dt) + x0
+        time = np.cumsum(dt)
+        altitude = np.cumsum(vz * dt) + z0
+
+
 
         # Pack outputs
-        outputs['t'] = t
-        outputs['t1'] = t[-1]
-        outputs['x'] = x
-        outputs['z'] = z
-        outputs['x1'] = x[-1]
-        outputs['z1'] = z[-1]
+        outputs['distance'] = distance
+        outputs['altitude'] = altitude
+        outputs['time'] = time
 
 if __name__ == "__main__":
     import openmdao.api as om
