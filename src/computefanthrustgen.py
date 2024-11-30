@@ -26,7 +26,7 @@ class ComputeFanThrustGen(om.ImplicitComponent):
         self.add_input('num_engines', val=1, desc='number of engines', units=None)
         self.add_input('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
         self.add_input('epsilon_r', val=0, desc='expansion ratio', units=None)
-        
+
         self.add_input('eta_fan', val=0, desc='fan efficiency')
         self.add_input('eta_duct', val=0, desc='duct efficiency')
 

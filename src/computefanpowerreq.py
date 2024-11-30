@@ -24,7 +24,7 @@ class ComputeFanPowerReq(om.ExplicitComponent):
         self.add_input('num_engines', val=1, desc='number of engines', units=None)
         self.add_input('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
         self.add_input('epsilon_r', val=1, desc='expansion ratio', units=None)
-        self.add_input('eta_fan', val=1, desc='fan efficiency', units=None)     
+        self.add_input('eta_fan', val=1, desc='fan efficiency', units=None)
         self.add_input('eta_duct', val=1, desc='duct efficiency', units=None)
 
         # Outputs
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     ivc.add_output('num_engines', 2, units=None)
     ivc.add_output('vtas', 100, units='m/s')
     ivc.add_output('epsilon_r', 1.5, units=None) 
-    ivc.add_output('eta_fan', 0.9, units=None)     
+    ivc.add_output('eta_fan', 0.9, units=None)
     ivc.add_output('eta_duct', 0.9, units=None)
 
 
