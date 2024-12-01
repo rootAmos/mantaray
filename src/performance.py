@@ -125,6 +125,7 @@ if __name__ == "__main__":
     ivc.add_output('x0', val=0, units='m', desc='initial position')
     ivc.add_output('z0', val=30000 * 0.3048, units='m', desc='initial altitude') # end of takeoff profile. flaps and gear up
     ivc.add_output('t0', val=0, units='s', desc='initial time')
+    ivc.add_output('z', val = np.linspace(400 * 0.3048, 30000 * 0.3048, n), units ='m', desc='altitude profile')
 
     # Velocity
     ivc.add_output('u0', val=50, units='m/s', desc='initial velocity in body fixed axis x direction') # v2 speed assumption
@@ -201,7 +202,6 @@ if __name__ == "__main__":
     p.model.add_constraint('soc', lower=0)
 
     # Climb to 30,000 ft
-    p.model.add_constraint('z1', lower=30000 * 0.3048, units='m')
     p.model.add_objective('obj_func')
 
     p.setup()

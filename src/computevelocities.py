@@ -56,6 +56,8 @@ class ComputeVelocities(om.ExplicitComponent):
         u = np.cumsum(axb * dt) + u0
         w = np.cumsum(azb * dt) + w0
 
+
+
         vtas = np.sqrt(u**2 + w**2)
 
 
