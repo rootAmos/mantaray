@@ -19,7 +19,7 @@ class ComputeAero(om.ExplicitComponent):
         self.add_input('e', val=1, desc='oswald efficiency factor', units=None)
         self.add_input('AR', val=1, desc='aspect ratio', units=None)
         self.add_input('c', val=330 * np.ones(self.options['n']), desc='speed of sound', units='m/s')
-        self.add_input('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
+        self.add_input('utas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
         self.add_input('CL', val= np.ones(self.options['n']), desc='lift coefficient', units=None)
 
         # Outputs
@@ -41,10 +41,10 @@ class ComputeAero(om.ExplicitComponent):
         e = inputs['e']
         AR = inputs['AR']
         c = inputs['c']
-        vtas = inputs['vtas']
+        utas = inputs['utas']
 
 
-        mach = vtas / c
+        mach = utas / c
 
         #CD_wave = np.where(mach > MCrit, wave_a * (mach/MCrit-1) ** wave_b, 0)
         CD_wave =0
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     ivc.add_output('e', 0.8, units=None)
     ivc.add_output('AR', 10, units=None)
     ivc.add_output('c', 340, units='m/s')
-    ivc.add_output('vtas', 100, units='m/s')
+    ivc.add_output('utas', 100, units='m/s')
     ivc.add_output('CL', 0.5, units=None)   
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])

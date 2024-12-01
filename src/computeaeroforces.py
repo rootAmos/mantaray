@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     ivc = om.IndepVarComp()
     ivc.add_output('rho', 1.225, units='kg/m**3')
-    ivc.add_output('vtas', 100, units='m/s')
+    ivc.add_output('utas', 100, units='m/s')
     ivc.add_output('CL', 0.5, units=None)   
     ivc.add_output('CD', 0.01, units=None)
 

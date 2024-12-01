@@ -24,7 +24,7 @@ class ComputeVelocityFromForces(om.ExplicitComponent):
         # Outputs
         self.add_output('ax', val=0, desc='acceleration in x', units='m/s**2')
         self.add_output('az', val=0, desc='acceleration in z', units='m/s**2')
-        self.add_output('vtas', val=0, desc='true airspeed', units='m/s')
+        self.add_output('utas', val=0, desc='true airspeed', units='m/s')
 
         self.declare_partials('*', '*', method='fd')
 
@@ -53,13 +53,13 @@ class ComputeVelocityFromForces(om.ExplicitComponent):
         u = np.cumsum(axb * dt) + u0
         w = np.cumsum(azb * dt) + w0
 
-        vtas = np.sqrt(u**2 + w**2)
+        utas = np.sqrt(u**2 + w**2)
 
 
         # Pack outputs
         outputs['ax'] = axb
         outputs['az'] = azb
-        outputs['vtas'] = vtas
+        outputs['utas'] = utas
 
 
 if __name__ == "__main__":
@@ -96,4 +96,4 @@ if __name__ == "__main__":
 
     print('ax = ', p['ComputeVelocity.ax'])
     print('az = ', p['ComputeVelocity.az'])
-    print('vtas = ', p['ComputeVelocity.vtas'])
+    print('utas = ', p['ComputeVelocity.utas'])

@@ -21,9 +21,10 @@ class ComputeAtmos(om.ExplicitComponent):
 
 
         # Inputs    
-        self.add_input('vz', val= np.ones(self.options['n']), desc='vertical speed in earth fixed', units='m/s')
         self.add_input('dt', val= np.ones(self.options['n']), desc='time step', units='s')
         self.add_input('z0', val= 0, desc='initial altitude', units='m')
+        self.add_input('gamma', val= np.ones(self.options['n']) * 0, desc='flight path angle', units='rad')
+        self.add_input('utas', val= np.ones(self.options['n']) * 0, desc='true airspeed', units='m/s')
 
         # Outputs
         self.add_output('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
@@ -40,7 +41,11 @@ class ComputeAtmos(om.ExplicitComponent):
         vz = inputs['vz'] # vertical speed (m/s)
         dt = inputs['dt'] # time step (s)   
         z0 = inputs['z0'] # initial altitude (m)
+        gamma = inputs['gamma'] # flight path angle (rad)
+        utas = inputs['utas'] # true airspeed (m/s)
+    
 
+        vz = utas * np.sin(gamma)
 
         z = np.cumsum(vz * dt) + z0
 

@@ -12,12 +12,11 @@ class ComputeTrajectories(om.ExplicitComponent):
     def setup(self):
 
         # Inputs    
-        self.add_input('vx', val= np.ones(self.options['n']) * 0, desc='flight path angle', units='m/s')
-        self.add_input('vz', val= np.ones(self.options['n']) * 0, desc='true airspeed', units='m/s')
         self.add_input('x0', val=  0, desc='initial distance', units='m')
-        self.add_input('z0', val=  0, desc='initial altitude', units='m')
+        self.add_input('utas', val= np.ones(self.options['n']) * 0, desc='true airspeed', units='m/s')
         self.add_input('t0', val= 0, desc='initial time', units='s')
         self.add_input('t1', val= 0, desc='end time', units='s')
+        self.add_input('gamma',val = 1 * np.pi/180 * np.ones(self.options['n']), desc='flight path angle', units='rad')
 
 
         # Outputs
@@ -29,12 +28,11 @@ class ComputeTrajectories(om.ExplicitComponent):
     def compute(self, inputs, outputs):
 
         # Unpack inputs
-        vx = inputs['vx']
-        vz = inputs['vz']
         x0 = inputs['x0']
-        z0 = inputs['z0']
+        utas = inputs['utas']
         t0 = inputs['t0']
         t1 = inputs['t1']
+        gamma = inputs['gamma']
 
         # Unpack options
         n = self.options['n']
@@ -44,6 +42,7 @@ class ComputeTrajectories(om.ExplicitComponent):
         dt = np.append(0, dt)
 
         # Compute distance, time, and altitude
+        vx = utas * np.cos(gamma)
         x = np.cumsum(vx * dt) + x0
 
         # Pack outputs
@@ -60,12 +59,10 @@ if __name__ == "__main__":
 
     ivc = om.IndepVarComp()
     ivc.add_output('vx', 100 * np.ones(n), units='m/s')
-    ivc.add_output('vz', 5 *np.ones(n), units='m/s')
     ivc.add_output('t0', 0, units='s')
     ivc.add_output('t1', 10*60, units='s')
 
     ivc.add_output('x0', 0, units='m')
-    ivc.add_output('z0', 0, units='m')
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
     model.add_subsystem('ComputeTrajectories', ComputeTrajectories(n = n), promotes_inputs=['*'])

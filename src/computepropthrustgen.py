@@ -25,7 +25,7 @@ class ComputePropThrustGen(om.ExplicitComponent):
         self.add_input('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
         self.add_input('unit_shaft_pow', val= np.ones(self.options['n']), desc='power generated per engine', units='W')
         self.add_input('num_motors', val=1, desc='number of engines', units=None)
-        self.add_input('vtas', val=np.ones(self.options['n']), desc='true airspeed', units='m/s')
+        self.add_input('utas', val=np.ones(self.options['n']), desc='true airspeed', units='m/s')
         self.add_input('eta_prop', val=0.8, desc='propeller efficiency', units=None)
 
         # Outputs
@@ -43,7 +43,7 @@ class ComputePropThrustGen(om.ExplicitComponent):
         d_hub = inputs['d_hub']
         rho = inputs['rho']
         num_motors = inputs['num_motors']
-        vtas = inputs['vtas']
+        utas = inputs['utas']
         unit_shaft_pow_req = inputs['unit_shaft_pow']
 
         # Unpack outputs
@@ -54,25 +54,25 @@ class ComputePropThrustGen(om.ExplicitComponent):
         #diskarea = np.pi * ((d_blade/2)**2 - (d_hub/2)**2)
 
         eta_prplsv = 0.96
-        #unit_propulsive_pow_req = unit_thrust_gen * vtas / eta_prplsv
+        #unit_propulsive_pow_req = unit_thrust_gen * utas / eta_prplsv
 
         # Compute the power required [1] Eq 15-75
-        #unit_propulsive_pow_req = unit_thrust_gen * vtas  + unit_thrust_gen ** 1.5/ (2 * rho * diskarea) ** 0.5
+        #unit_propulsive_pow_req = unit_thrust_gen * utas  + unit_thrust_gen ** 1.5/ (2 * rho * diskarea) ** 0.5
 
         # Compute induced airspeed [1] Eq 15-76
-        #v_ind = 0.5 * ( - vtas + ( vtas**2 + unit_thrust_gen / (0.5 * rho * diskarea) )**0.5 )
+        #v_ind = 0.5 * ( - utas + ( utas**2 + unit_thrust_gen / (0.5 * rho * diskarea) )**0.5 )
         
         # Compute station 3 velocity [1] Eq 15-73
-        #v3 = vtas + 2 * v_ind
+        #v3 = utas + 2 * v_ind
 
         # Compute propeller efficiency [1] Eq 15-77
-        #eta_prplsv = 2 / (1 + v3/vtas)
+        #eta_prplsv = 2 / (1 + v3/utas)
 
         # Compute the power required [1] Eq 15-78
         #unit_shaft_pow_calc = unit_propulsive_pow_req / eta_prop / eta_prplsv
 
         #residuals['total_thrust_gen'] = unit_shaft_pow_req - unit_shaft_pow_calc
-        outputs['total_thrust_gen'] = unit_shaft_pow_req / vtas * eta_prplsv * eta_prop * num_motors
+        outputs['total_thrust_gen'] = unit_shaft_pow_req / utas * eta_prplsv * eta_prop * num_motors
 
 
 if __name__ == "__main__":
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     ivc.add_output('rho', 1.225, units='kg/m**3')
     ivc.add_output('unit_shaft_pow', 500e3, units='W')
     ivc.add_output('num_motors', 2, units=None)
-    ivc.add_output('vtas', 100, units='m/s')
+    ivc.add_output('utas', 100, units='m/s')
 
 
 

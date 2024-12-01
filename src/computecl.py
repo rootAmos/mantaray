@@ -17,7 +17,7 @@ class ComputeCL(om.ExplicitComponent):
 
         # Inputs    
         self.add_input('mass', val= 1, desc='mass', units='kg')
-        self.add_input('vtas', val= 100*np.ones(self.options['n']), desc='true airspeed', units='m/s')
+        self.add_input('utas', val= 100*np.ones(self.options['n']), desc='true airspeed', units='m/s')
         self.add_input('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
         self.add_input('CLa', val=1, desc='lift curve slope', units='1/rad')
         self.add_input('alpha_0', val=0, desc='zero lift angle of attack', units='rad')
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     ivc.add_output('rho', 1.225, units='kg/m**3')
     ivc.add_output('mass', 8600, units='kg')
     ivc.add_output('aofa', 3 * np.pi/180, units='rad')
-    ivc.add_output('vtas', 100, units='m/s')
+    ivc.add_output('utas', 100, units='m/s')
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
     model.add_subsystem('ComputeCL', ComputeCL(), promotes_inputs=['*'])

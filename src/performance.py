@@ -140,8 +140,7 @@ if __name__ == "__main__":
     ivc.add_output('z1', val = 30000 * 0.3048, units ='m', desc='end altitude')
 
     # Velocity
-    ivc.add_output('u0', val=50, units='m/s', desc='initial velocity in body fixed axis x direction') # v2 speed assumption
-    ivc.add_output('w0', val=0, units='m/s', desc='initial velocity in body fixed axis z direction')
+    ivc.add_output('u0', val=50, units='m/s', desc='initial velocity in longitudinal direction of body-fixed frame') # v2 speed assumption
     ivc.add_output('gamma', val=0 * np.ones(n), units='rad', desc='flight path angle')
 
     # Aircraft geometry
@@ -228,7 +227,7 @@ if __name__ == "__main__":
 
     print('Ending Altitude (ft) = ', p['z1'] * 0.3048)
     print('Flight path angle profile (deg) = ', p['gamma'] * 180/np.pi)
-    print('True airspeed profile (m/s) = ', p['vtas'])  
+    print('True airspeed profile (m/s) = ', p['utas'])  
     print('Time profile (s) = ', p['t'])
     print('Battery state of charge profile (%) = ', p['soc'] * 100)
     print('Fuel consumption (kg) = ', p['obj_func'])

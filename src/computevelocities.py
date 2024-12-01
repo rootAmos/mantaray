@@ -19,15 +19,11 @@ class ComputeVelocities(om.ExplicitComponent):
         self.add_input('mass', val=1, desc='mass', units='kg')
         self.add_input('gamma', val= np.ones(self.options['n']), desc='flight path angle', units='rad')
         self.add_input('dt', val= np.ones(self.options['n']), desc='time step', units='s')
-        self.add_input('u0', val=0, desc='initial velocity in x-axis of body-fixed frame', units='m/s')
-        self.add_input('w0', val=0, desc='initial velocity in z-axis of body-fixed frame', units='m/s')
+        self.add_input('v0', val=0, desc='initial velocity', units='m/s')
 
         # Outputs
-        self.add_output('ax', val= np.zeros(self.options['n']), desc='acceleration in x', units='m/s**2')
-        self.add_output('az', val= np.zeros(self.options['n']), desc='acceleration in z', units='m/s**2')
-        self.add_output('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s', lower=1e-3)
-        self.add_output('ub', val= 160* np.ones(self.options['n']), desc='airspeed in x-axis of fixed body frame', units='m/s', lower=1e-3)
-        #self.add_output('wb', val= 10*np.ones(self.options['n']), desc='airspeed in z-axis of fixed body frame', units='m/s', lower=1e-3)
+        self.add_output('acc', val= np.zeros(self.options['n']), desc='acceleration in longitudinal direction of body-fixed frame', units='m/s**2')
+        self.add_output('utas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s', lower=1e-3)
 
         self.declare_partials('*', '*', method='fd')
 
@@ -40,33 +36,21 @@ class ComputeVelocities(om.ExplicitComponent):
         mass = inputs['mass']
         gamma = inputs['gamma']
         dt = inputs['dt']
-        u0 = inputs['u0']
-        w0 = inputs['w0']
+        v0 = inputs['v0']
 
         # Unpack constants
         g = self.options['g']
 
-        
-
         # Accelerations in the body-fixed frame
-        axb = (Thrust - Drag - mass * g * np.sin(gamma)) / mass
-        azb = (Lift - mass * g * np.cos(gamma)) / mass
+        acc  = (Thrust - Drag - mass * g * np.sin(gamma)) / mass
 
         # Compute velocity in the body-fixed frame
-        u = np.cumsum(axb * dt) + u0
-        w = np.cumsum(azb * dt) + w0
+        utas = np.cumsum(acc * dt) + v0
 
-
-
-        vtas = np.sqrt(u**2 + w**2)
-
-
+    
         # Pack outputs
-        outputs['ax'] = axb
-        outputs['az'] = azb
-        outputs['vtas'] = vtas
-        outputs['ub'] = u
-        #outputs['wb'] = w
+        outputs['acc'] = acc
+        outputs['utas'] = utas
 
 
 if __name__ == "__main__":
@@ -82,8 +66,8 @@ if __name__ == "__main__":
     ivc.add_output('mass', 8600, units='kg')
     ivc.add_output('gamma', 0, units='rad')
     ivc.add_output('dt', 0.1, units='s')
-    ivc.add_output('u0', 0, units='m/s')
-    ivc.add_output('w0', 0, units='m/s')
+    ivc.add_output('v0', 0, units='m/s')
+
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
     model.add_subsystem('ComputeVelocity', ComputeVelocities(), promotes_inputs=['*'])
@@ -101,6 +85,5 @@ if __name__ == "__main__":
     #om.n2(p)
     p.run_model()
 
-    print('ax = ', p['ComputeVelocity.ax'])
-    print('az = ', p['ComputeVelocity.az'])
-    print('vtas = ', p['ComputeVelocity.vtas'])
+    print('acc = ', p['ComputeVelocity.acc'])
+    print('utas = ', p['ComputeVelocity.utas'])

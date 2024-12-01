@@ -13,7 +13,7 @@ class ComputeKinematics(om.ExplicitComponent):
 
         # Inputs    
         self.add_input('gamma', val= np.ones(self.options['n']) * 0, desc='flight path angle', units='rad')
-        self.add_input('vtas', val= np.ones(self.options['n']) * 0, desc='true airspeed', units='m/s')
+        self.add_input('utas', val= np.ones(self.options['n']) * 0, desc='true airspeed', units='m/s')
 
 
         # Outputs
@@ -26,11 +26,10 @@ class ComputeKinematics(om.ExplicitComponent):
 
         # Unpack inputs
         gamma = inputs['gamma']
-        vtas = inputs['vtas']
+        utas = inputs['utas']
 
-        # Compute horizontal and vertical velocities
-        vx = vtas * np.cos(gamma)
-        vz = vtas * np.sin(gamma)
+        # Compute horizontal and vertical velocities in earth frame
+        vx = utas * np.cos(gamma)
 
         # Pack outputs
         outputs['vx'] = vx
@@ -43,7 +42,7 @@ if __name__ == "__main__":
     model = p.model
 
     ivc = om.IndepVarComp()
-    ivc.add_output('vtas', 100, units='m/s')
+    ivc.add_output('utas', 100, units='m/s')
     ivc.add_output('gamma', 0, units='rad')
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
