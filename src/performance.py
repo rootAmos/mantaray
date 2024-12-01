@@ -15,6 +15,8 @@ from src.computeaero import ComputeAero
 from src.computepropthrustgen import ComputePropThrustGen   
 from src.computevelocities import ComputeVelocities
 from src.computeatmos import ComputeAtmos
+from src.computeduration import ComputeDuration
+from src.computetrajectories import ComputeTrajectories
 
 """
 A python tool to size electric power trains and electric subsystems for aircraft.
@@ -92,6 +94,16 @@ class Performance(om.Group):
                            subsys=ComputeKinematics(n=self.options['n']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
+        
+        self.add_subsystem(name='ComputeDuration',
+                           subsys=ComputeDuration(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+
+        self.add_subsystem(name='ComputeTrajectories',
+                           subsys=ComputeTrajectories(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
 
 
         self.nonlinear_solver = NewtonSolver()
@@ -123,17 +135,14 @@ if __name__ == "__main__":
 
     # Position
     ivc.add_output('x0', val=0, units='m', desc='initial position')
-    ivc.add_output('z0', val=30000 * 0.3048, units='m', desc='initial altitude') # end of takeoff profile. flaps and gear up
+    ivc.add_output('z0', val=400 * 0.3048, units='m', desc='initial altitude') # end of takeoff profile. flaps and gear up
     ivc.add_output('t0', val=0, units='s', desc='initial time')
-    ivc.add_output('z', val = np.linspace(400 * 0.3048, 30000 * 0.3048, n), units ='m', desc='altitude profile')
+    ivc.add_output('z1', val = 30000 * 0.3048, units ='m', desc='end altitude')
 
     # Velocity
     ivc.add_output('u0', val=50, units='m/s', desc='initial velocity in body fixed axis x direction') # v2 speed assumption
     ivc.add_output('w0', val=0, units='m/s', desc='initial velocity in body fixed axis z direction')
     ivc.add_output('gamma', val=0 * np.ones(n), units='rad', desc='flight path angle')
-
-    # Time step
-    ivc.add_output('dt', val=0.5 * np.ones(n), units='s', desc='time step')
 
     # Aircraft geometry
     ivc.add_output('S', val=S , units='m**2', desc='wing area')
@@ -187,10 +196,12 @@ if __name__ == "__main__":
     p.model.nonlinear_solver.linesearch = om.BoundsEnforceLS()
 
     # Analysis
-    #p.setup()
-    #om.n2(p)
-    #p.run_model()
+    p.setup()
+    om.n2(p)
+    p.run_model()
 
+    """
+    
 
     # setup the optimization
     p.driver = om.ScipyOptimizeDriver()
@@ -223,25 +234,4 @@ if __name__ == "__main__":
     print('Fuel consumption (kg) = ', p['obj_func'])
     print('Hybridization ratio profile (%) = ', p['hy'] * 100)
     print('Power profile (kW) = ', p['unit_shaft_pow']/1000)
-
-    # Create a recorder variable
-    # recorder = om.SqliteRecorder('cases.sql')
-    # Attach a recorder to the problem
-    # p.add_recorder(recorder)
-
-
-    # Instantiate your CaseReader
-    # cr = om.CaseReader("cases.sql")
-    # Isolate "problem" as your source
-    # driver_cases = cr.list_cases('problem', out_stream=None)
-    # Get the first case from the recorder
-    # case = cr.get_case('after_run_driver')
-
-    # These options will give outputs as the model sees them
-    # Gets value but will not convert units
-
-    # print(case.list_outputs())
-
-    # #om.view_connections(p, outfile="fuel_cell_system.html", show_browser=True)
-    # write_xdsm(p, filename='bop',show_browser=True, out_format='pdf',
-    #        quiet=False, output_side='left', recurse=False)
+    """

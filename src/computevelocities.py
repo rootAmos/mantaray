@@ -27,7 +27,7 @@ class ComputeVelocities(om.ExplicitComponent):
         self.add_output('az', val= np.zeros(self.options['n']), desc='acceleration in z', units='m/s**2')
         self.add_output('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s', lower=1e-3)
         self.add_output('ub', val= 160* np.ones(self.options['n']), desc='airspeed in x-axis of fixed body frame', units='m/s', lower=1e-3)
-        self.add_output('wb', val= 10*np.ones(self.options['n']), desc='airspeed in z-axis of fixed body frame', units='m/s', lower=1e-3)
+        #self.add_output('wb', val= 10*np.ones(self.options['n']), desc='airspeed in z-axis of fixed body frame', units='m/s', lower=1e-3)
 
         self.declare_partials('*', '*', method='fd')
 
@@ -66,7 +66,7 @@ class ComputeVelocities(om.ExplicitComponent):
         outputs['az'] = azb
         outputs['vtas'] = vtas
         outputs['ub'] = u
-        outputs['wb'] = w
+        #outputs['wb'] = w
 
 
 if __name__ == "__main__":

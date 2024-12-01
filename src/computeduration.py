@@ -29,6 +29,8 @@ class ComputeDuration(om.ImplicitComponent):
         z1 = inputs['z1']
         z0 = inputs['z0']
         t0 = inputs['t0']
+
+        # Unpack outputs
         t1 = outputs['t1']
 
         # unpack options
@@ -38,13 +40,14 @@ class ComputeDuration(om.ImplicitComponent):
         t = np.linspace(t0, t1, n).flatten()
 
         dt = np.diff(t)
-        dt = np.append(dt, dt[-1])
+        dt = np.append(0, dt)
 
         z = np.cumsum(vz * dt) + z0
         z1_calc = z[-1]
 
         # Compute residuals
         residuals['t1'] = z1 - z1_calc
+
 
 if __name__ == "__main__":
     import openmdao.api as om
