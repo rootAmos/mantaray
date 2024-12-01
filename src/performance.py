@@ -40,8 +40,22 @@ class Performance(om.Group):
 
     def setup(self):
 
+
+
         self.add_subsystem(name='ComputeAtmos',
                            subsys=ComputeAtmos(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+
+        self.add_subsystem(name='ComputePropThrustGen',
+                           subsys=ComputePropThrustGen(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+
+
+
+        self.add_subsystem(name='ComputeCL',
+                           subsys=ComputeCL(n=self.options['n'], g=self.options['g']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
 
@@ -54,32 +68,11 @@ class Performance(om.Group):
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
 
-
-        self.add_subsystem(name='ComputeKinematics',
-                           subsys=ComputeKinematics(n=self.options['n']),
-                           promotes_inputs=['*'],
-                           promotes_outputs=['*'])
-
-        self.add_subsystem(name='ComputeVelocities',
-                           subsys=ComputeVelocities(n=self.options['n'], g=self.options['g']),
-                           promotes_inputs=['*'],
-                           promotes_outputs=['*'])
-
-        self.add_subsystem(name='ComputeCL',
-                           subsys=ComputeCL(n=self.options['n'], g=self.options['g']),
-                           promotes_inputs=['*'],
-                           promotes_outputs=['*'])
-        
-        self.add_subsystem(name='ComputePropThrustGen',
-                           subsys=ComputePropThrustGen(n=self.options['n']),
-                           promotes_inputs=['*'],
-                           promotes_outputs=['*'])  
-        
         self.add_subsystem(name='ComputeAeroForces',
                            subsys=ComputeAeroForces(n=self.options['n']),
                            promotes_inputs=['*'],
-                           promotes_outputs=['*'])  
-        
+                           promotes_outputs=['*'])
+
         self.add_subsystem(name='ComputeTurbine',
                            subsys=ComputeTurbine(n=self.options['n']),
                            promotes_inputs=['*'],
@@ -88,12 +81,22 @@ class Performance(om.Group):
         self.add_subsystem(name='ComputeBatteryDischarge',
                            subsys=ComputeBatteryDischarge(n=self.options['n']),
                            promotes_inputs=['*'],
-                           promotes_outputs=['*'])        
+                           promotes_outputs=['*'])
+
+        self.add_subsystem(name='ComputeVelocities',
+                           subsys=ComputeVelocities(n=self.options['n'], g=self.options['g']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+
+        self.add_subsystem(name='ComputeKinematics',
+                           subsys=ComputeKinematics(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
 
 
         self.nonlinear_solver = NewtonSolver()
         self.linear_solver = DirectSolver()
-        self.nonlinear_solver.options['iprint'] = 2
+        #self.nonlinear_solver.options['iprint'] = 2
         self.nonlinear_solver.options['maxiter'] = 200
         self.nonlinear_solver.options['solve_subsystems'] = True
         self.nonlinear_solver.options['stall_limit'] = 4
@@ -105,7 +108,7 @@ if __name__ == "__main__":
     # from omxdsm import write_xdsm
 
     # generate path where xlsx with all data can be found
-    n = 10
+    n = 20
 
     ivc = om.IndepVarComp()
 
@@ -120,16 +123,16 @@ if __name__ == "__main__":
 
     # Position
     ivc.add_output('x0', val=0, units='m', desc='initial position')
-    ivc.add_output('z0', val=0, units='m', desc='initial altitude')
+    ivc.add_output('z0', val=30000 * 0.3048, units='m', desc='initial altitude') # end of takeoff profile. flaps and gear up
     ivc.add_output('t0', val=0, units='s', desc='initial time')
 
     # Velocity
-    ivc.add_output('u0', val=50, units='m/s', desc='initial velocity in body fixed axis x direction')
+    ivc.add_output('u0', val=50, units='m/s', desc='initial velocity in body fixed axis x direction') # v2 speed assumption
     ivc.add_output('w0', val=0, units='m/s', desc='initial velocity in body fixed axis z direction')
     ivc.add_output('gamma', val=0 * np.ones(n), units='rad', desc='flight path angle')
 
     # Time step
-    ivc.add_output('dt', val=0.1 * np.ones(n), units='s', desc='time step')
+    ivc.add_output('dt', val=0.5 * np.ones(n), units='s', desc='time step')
 
     # Aircraft geometry
     ivc.add_output('S', val=S , units='m**2', desc='wing area')
@@ -151,24 +154,26 @@ if __name__ == "__main__":
     ivc.add_output('eta_cbl', val=0.9, units=None, desc='cables efficiency')
     ivc.add_output('eta_prop', val=0.8, units=None, desc='propeller efficiency')
     ivc.add_output('eta_duct', val=0.8, units=None, desc='duct efficiency')
-    ivc.add_output('eta_fan', val=0.8, units=None, desc='fan efficiency')   
+    ivc.add_output('eta_fan', val=0.8, units=None, desc='fan efficiency')  
+    ivc.add_output('eta_gen', val=0.9, units=None, desc='generator efficiency')
 
     ivc.add_output('batt_cap', val=1000 * 3600, units='J', desc='battery capacity')
     ivc.add_output('soc_0', val=1, units=None, desc='initial battery state of charge')
-    ivc.add_output('num_engines', val=2, units=None, desc='number of engines')
+    ivc.add_output('num_motors', val=2, units=None, desc='number of engines')
     ivc.add_output('d_blade', val=1, units='m', desc='blade diameter')
     ivc.add_output('d_hub', val=0.2, units='m', desc='hub diameter')
 
-    ivc.add_output('unit_shaft_pow_gen', val=500e3 * np.ones(n), units='W', desc='power generated per engine')
-    
-
+    ivc.add_output('unit_shaft_pow', val=500e3 * np.ones(n), units='W', desc='power generated per engine')
+    ivc.add_output('psfc', val=0.0003 / 3600 * np.ones(n), units='kg/W/s', desc='power specific fuel consumption')
+    ivc.add_output('num_turbines', val=2, units=None, desc='number of turbines')
+    ivc.add_output('hy', val=0.1 * np.ones(n), units=None, desc='hybridization ratio')
 
     
     p = om.Problem()
     model = p.model
     p.model.add_subsystem('ivc', ivc, promotes=['*'])
     p.model.add_subsystem('System', Performance(n=n),
-                          promotes_inputs=['*'])
+                          promotes_inputs=['*'], promotes_outputs=['*'])
 
     # set model settings
     p.model.nonlinear_solver = om.NewtonSolver()
@@ -180,16 +185,50 @@ if __name__ == "__main__":
     p.model.nonlinear_solver.options['solve_subsystems'] = True
     p.model.nonlinear_solver.linesearch = om.BoundsEnforceLS()
 
-    p.setup()
-    om.n2(p)
+    # Analysis
+    #p.setup()
+    #om.n2(p)
+    #p.run_model()
 
+
+    # setup the optimization
+    p.driver = om.ScipyOptimizeDriver()
+    p.driver.options['optimizer'] = 'SLSQP'
+
+    p.model.add_design_var('unit_shaft_pow', lower=50e3, upper=2000e3)
+    p.model.add_design_var('hy', lower=0, upper=1)
+    p.model.add_design_var('gamma', lower=1 *np.pi/180, upper=40 *np.pi/180)
+    p.model.add_constraint('soc', lower=0)
+
+    # Climb to 30,000 ft
+    p.model.add_constraint('z1', lower=30000 * 0.3048, units='m')
+    p.model.add_objective('obj_func')
+
+    p.setup()
+
+    # Set initial values.
+    #p.set_val('unit_shaft_pow', 500e3 * np.ones(n))
+    #p.set_val('hy', 0.5 * np.ones(n))
+
+    # run the optimization
+    p.run_driver()
+
+    # Print the results
+
+    print('Ending Altitude (ft) = ', p['z1'] * 0.3048)
+    print('Flight path angle profile (deg) = ', p['gamma'] * 180/np.pi)
+    print('True airspeed profile (m/s) = ', p['vtas'])  
+    print('Time profile (s) = ', p['t'])
+    print('Battery state of charge profile (%) = ', p['soc'] * 100)
+    print('Fuel consumption (kg) = ', p['obj_func'])
+    print('Hybridization ratio profile (%) = ', p['hy'] * 100)
+    print('Power profile (kW) = ', p['unit_shaft_pow']/1000)
 
     # Create a recorder variable
     # recorder = om.SqliteRecorder('cases.sql')
     # Attach a recorder to the problem
     # p.add_recorder(recorder)
 
-    p.run_model()
 
     # Instantiate your CaseReader
     # cr = om.CaseReader("cases.sql")

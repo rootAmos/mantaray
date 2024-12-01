@@ -13,9 +13,9 @@ class ComputeVelocities(om.ExplicitComponent):
     def setup(self):
 
         # Inputs    
-        self.add_input('Lift', val= np.ones(self.options['n']), desc='lift force', units='N')
-        self.add_input('Drag', val= np.ones(self.options['n']), desc='drag force', units='N')
-        self.add_input('Thrust', val= np.ones(self.options['n']), desc='thrust force', units='N')
+        self.add_input('lift', val= np.ones(self.options['n']), desc='lift force', units='N')
+        self.add_input('drag', val= np.ones(self.options['n']), desc='drag force', units='N')
+        self.add_input('total_thrust_gen', val= np.ones(self.options['n']), desc='thrust force', units='N')
         self.add_input('mass', val=1, desc='mass', units='kg')
         self.add_input('gamma', val= np.ones(self.options['n']), desc='flight path angle', units='rad')
         self.add_input('dt', val= np.ones(self.options['n']), desc='time step', units='s')
@@ -25,16 +25,18 @@ class ComputeVelocities(om.ExplicitComponent):
         # Outputs
         self.add_output('ax', val= np.zeros(self.options['n']), desc='acceleration in x', units='m/s**2')
         self.add_output('az', val= np.zeros(self.options['n']), desc='acceleration in z', units='m/s**2')
-        self.add_output('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
+        self.add_output('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s', lower=1e-3)
+        self.add_output('ub', val= 160* np.ones(self.options['n']), desc='airspeed in x-axis of fixed body frame', units='m/s', lower=1e-3)
+        self.add_output('wb', val= 10*np.ones(self.options['n']), desc='airspeed in z-axis of fixed body frame', units='m/s', lower=1e-3)
 
         self.declare_partials('*', '*', method='fd')
 
     def compute(self, inputs, outputs):
 
         # Unpack inputs
-        Lift = inputs['Lift']
-        Drag = inputs['Drag']
-        Thrust = inputs['Thrust']
+        Lift = inputs['lift']
+        Drag = inputs['drag']
+        Thrust = inputs['total_thrust_gen']
         mass = inputs['mass']
         gamma = inputs['gamma']
         dt = inputs['dt']
@@ -61,6 +63,8 @@ class ComputeVelocities(om.ExplicitComponent):
         outputs['ax'] = axb
         outputs['az'] = azb
         outputs['vtas'] = vtas
+        outputs['ub'] = u
+        outputs['wb'] = w
 
 
 if __name__ == "__main__":
@@ -70,9 +74,9 @@ if __name__ == "__main__":
     model = p.model
 
     ivc = om.IndepVarComp()
-    ivc.add_output('Thrust', 1000, units='N')
-    ivc.add_output('Lift', 1000, units='N')
-    ivc.add_output('Drag', 100, units='N')
+    ivc.add_output('total_thrust_gen', 1000, units='N')
+    ivc.add_output('lift', 1000, units='N')
+    ivc.add_output('drag', 100, units='N')
     ivc.add_output('mass', 8600, units='kg')
     ivc.add_output('gamma', 0, units='rad')
     ivc.add_output('dt', 0.1, units='s')
@@ -80,7 +84,7 @@ if __name__ == "__main__":
     ivc.add_output('w0', 0, units='m/s')
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
-    model.add_subsystem('ComputeVelocity', ComputeVelocity(), promotes_inputs=['*'])
+    model.add_subsystem('ComputeVelocity', ComputeVelocities(), promotes_inputs=['*'])
 
     model.nonlinear_solver = om.NewtonSolver()
     model.linear_solver = om.DirectSolver()

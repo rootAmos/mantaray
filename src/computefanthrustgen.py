@@ -22,8 +22,8 @@ class ComputeFanThrustGen(om.ImplicitComponent):
         self.add_input('d_blade', val=0, desc='blade diameter', units='m')
         self.add_input('d_hub', val=0, desc='hub diameter', units='m')
         self.add_input('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
-        self.add_input('unit_shaft_pow_gen', val= np.ones(self.options['n']), desc='power supplied per engine', units='W')
-        self.add_input('num_engines', val=1, desc='number of engines', units=None)
+        self.add_input('unit_shaft_pow', val= np.ones(self.options['n']), desc='power supplied per engine', units='W')
+        self.add_input('num_motors', val=1, desc='number of engines', units=None)
         self.add_input('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
         self.add_input('epsilon_r', val=0, desc='expansion ratio', units=None)
 
@@ -44,14 +44,14 @@ class ComputeFanThrustGen(om.ImplicitComponent):
         d_blade = inputs['d_blade']
         d_hub = inputs['d_hub']
         rho = inputs['rho']
-        unit_shaft_pow_gen = inputs['unit_shaft_pow_gen']
-        num_engines = inputs['num_engines']
+        unit_shaft_pow_set = inputs['unit_shaft_pow']
+        num_motors = inputs['num_motors']
         vtas = inputs['vtas']
         epsilon_r = inputs['epsilon_r']
 
         total_thrust_gen = outputs['total_thrust_gen']
 
-        unit_thrust_req = total_thrust_gen / num_engines  
+        unit_thrust_req = total_thrust_gen / num_motors  
         diskarea = np.pi * ((d_blade/2)**2 - (d_hub/2)**2)
 
         # Compute the power required [1] Eq 15-90
@@ -67,10 +67,10 @@ class ComputeFanThrustGen(om.ImplicitComponent):
         eta_prplsv = 2 / (1 + v3/vtas)    
 
         # Compute the power required [1] Eq 15-78
-        unit_shaft_pow_req = unit_propulsive_pow_req / eta_fan / eta_duct / eta_prplsv
+        unit_shaft_pow_calc = unit_propulsive_pow_req / eta_fan / eta_duct / eta_prplsv
 
         # Pack outputs
-        residuals['total_thrust_gen'] = unit_shaft_pow_req - unit_shaft_pow_gen
+        residuals['total_thrust_gen'] = unit_shaft_pow_set - unit_shaft_pow_calc
 
 
 if __name__ == "__main__":
@@ -83,8 +83,8 @@ if __name__ == "__main__":
     ivc.add_output('d_blade', 1.5, units='m')
     ivc.add_output('d_hub', 0.5, units='m')
     ivc.add_output('rho', 1.225, units='kg/m**3')
-    ivc.add_output('unit_shaft_pow_gen', 500e3, units='W')
-    ivc.add_output('num_engines', 2, units=None)
+    ivc.add_output('unit_shaft_pow', 500e3, units='W')
+    ivc.add_output('num_motors', 2, units=None)
     ivc.add_output('vtas', 100, units='m/s')
     ivc.add_output('epsilon_r', 1.5, units=None)
     ivc.add_output('eta_fan', 0.9, units=None)

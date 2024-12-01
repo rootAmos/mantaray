@@ -18,8 +18,8 @@ class ComputeBatteryDischarge(om.ExplicitComponent):
     def setup(self):
 
         # Inputs    
-        self.add_input('unit_shaft_pow_req', val= np.ones(self.options['n']), desc='power required per engine', units='W')
-        self.add_input('num_engines', val=1, desc='number of engines', units=None)
+        self.add_input('unit_shaft_pow', val= np.ones(self.options['n']), desc='power required per engine', units='W')
+        self.add_input('num_motors', val=1, desc='number of engines', units=None)
         self.add_input('dt', val= np.ones(self.options['n']), desc='time step', units='s')
         self.add_input('soc_0', val= 1, desc='initial battery state of charge', units=None)
         self.add_input('batt_cap', val= 1, desc='battery capacity', units='J')
@@ -42,27 +42,24 @@ class ComputeBatteryDischarge(om.ExplicitComponent):
         eta_motor = inputs['eta_motor']
         eta_pe = inputs['eta_pe']
         eta_cbl = inputs['eta_cbl']
-        unit_shaft_pow_req = inputs['unit_shaft_pow_req']
-        num_engines = inputs['num_engines']
+        unit_shaft_pow = inputs['unit_shaft_pow']
+        num_motors = inputs['num_motors']
         dt = inputs['dt']
         soc_0 = inputs['soc_0']
-        batt_cap = inputs['batt_cap']
+        batt_cap__J = inputs['batt_cap']
         hy = inputs['hy']
 
         # Battery power required (W)
-        batt_pow_req = unit_shaft_pow_req * num_engines / eta_batt / eta_motor / eta_pe / eta_cbl * hy
+        batt_pow_req = unit_shaft_pow * num_motors / eta_batt / eta_motor / eta_pe / eta_cbl * (1-hy)
 
         # Battery discharge (J)
-        batt_nrg = np.cumsum(batt_pow_req * dt)
-
-        # Battery discharge (Wh)
-        batt_dischg = batt_nrg / 3600   
+        batt_usage__J = np.cumsum(batt_pow_req * dt)
 
         # Battery state of charge
-        soc = (soc_0 * batt_cap - batt_dischg) / batt_cap
+        soc = (soc_0 * batt_cap__J - batt_usage__J) / batt_cap__J
 
         # Pack outputs
-        outputs['soc'] = soc    
+        outputs['soc'] = soc   
 
 
 
@@ -73,8 +70,8 @@ if __name__ == "__main__":
     model = p.model
 
     ivc = om.IndepVarComp()
-    ivc.add_output('unit_shaft_pow_req', 1000, units='W')
-    ivc.add_output('num_engines', 2, units=None)
+    ivc.add_output('unit_shaft_pow', 1000, units='W')
+    ivc.add_output('num_motors', 2, units=None)
     ivc.add_output('dt', 1, units='s')
     ivc.add_output('soc_0', 0.5, units=None)
     ivc.add_output('batt_cap', 1000, units='Wh')

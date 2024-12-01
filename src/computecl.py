@@ -17,15 +17,17 @@ class ComputeCL(om.ExplicitComponent):
 
         # Inputs    
         self.add_input('mass', val= 1, desc='mass', units='kg')
-        self.add_input('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
+        self.add_input('vtas', val= 100*np.ones(self.options['n']), desc='true airspeed', units='m/s')
         self.add_input('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
         self.add_input('CLa', val=1, desc='lift curve slope', units='1/rad')
-        self.add_input('alpha_0', val=0, desc='zero lift angle of attack', units=None)
+        self.add_input('alpha_0', val=0, desc='zero lift angle of attack', units='rad')
         self.add_input('alpha_i', val=0, desc='incidence angle', units='rad')
         self.add_input('gamma', val= np.ones(self.options['n']), desc='flight path angle', units='rad')
+        self.add_input('ub', val= 100*np.ones(self.options['n']), desc='airspeed in x-axis of fixed body frame', units='m/s')
+        self.add_input('S', val= 30, desc='wing area', units='m**2')
 
         # Outputs
-        self.add_output('CL', val= np.ones(self.options['n']), desc='lift coefficient', units=None)
+        self.add_output('CL', val= 0.7* np.ones(self.options['n']), desc='lift coefficient', units=None)
         self.add_output('aofa', val= np.ones(self.options['n']), desc='angle of attack', units='rad')
 
         self.declare_partials('*', '*', method='fd')
@@ -34,18 +36,20 @@ class ComputeCL(om.ExplicitComponent):
 
         # Unpack inputs
         mass = inputs['mass']
-        vtas = inputs['vtas']
+        ub = inputs['ub']
         rho = inputs['rho']
         CLa = inputs['CLa']
         alpha_0 = inputs['alpha_0']
         alpha_i = inputs['alpha_i']
         gamma = inputs['gamma']
+        S = inputs['S']
+        
 
         # Unpack constants
         g = self.options['g']
 
         # Lift coefficient Required
-        CL = mass * g * np.cos(gamma) / 0.5 * rho * vtas**2  
+        CL = mass * g * np.cos(gamma) / ( 0.5 * rho * ub**2 * S  )
 
         # Angle of attack
         aofa = (CL / CLa )+ alpha_0 - alpha_i

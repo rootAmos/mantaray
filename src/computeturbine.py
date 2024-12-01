@@ -19,8 +19,9 @@ class ComputeTurbine(om.ExplicitComponent):
     def setup(self):
 
         # Inputs    
-        self.add_input('unit_shaft_pow_req', val= np.ones(self.options['n']), desc='power required per engine', units='W')
-        self.add_input('num_engines', val=1, desc='number of engines', units=None)
+        self.add_input('unit_shaft_pow', val= np.ones(self.options['n']), desc='power required per engine', units='W')
+        self.add_input('num_motors', val=1, desc='number of engines', units=None)
+        self.add_input('num_turbines', val=1, desc='number of turbines', units=None)
         self.add_input('dt', val=np.ones(self.options['n']), desc='time step', units='s')
         self.add_input('psfc', val=np.ones(self.options['n']), desc='power specific fuel consumption', units='kg/s/W')
         self.add_input('eta_gen', val=1, desc='generator efficiency', units=None)
@@ -30,8 +31,9 @@ class ComputeTurbine(om.ExplicitComponent):
         self.add_input('hy', val=np.ones(self.options['n']), desc='hybridization ratio', units=None)
 
         # Outputs
-        self.add_output('fuel_consumption', val=np.ones(self.options['n']), desc='fuel consumption', units='kg')
-        self.add_output('turbine_pow_req', val=np.ones(self.options['n']), desc='turbine power required', units='W')
+        self.add_output('fuel_burn', val= np.ones(self.options['n']), desc='fuel consumption profile', units='kg')
+        self.add_output('unit_turbine_pow', val=np.ones(self.options['n']), desc='turbine power required', units='W')
+        self.add_output('obj_func', val= 1, desc='objective function. negative of total fuel consumption', units='kg')
 
 
         self.declare_partials('*', '*', method='fd')
@@ -39,8 +41,9 @@ class ComputeTurbine(om.ExplicitComponent):
     def compute(self, inputs, outputs):
 
         # Unpack inputs
-        unit_shaft_pow_req = inputs['unit_shaft_pow_req']
-        num_engines = inputs['num_engines']
+        unit_shaft_pow = inputs['unit_shaft_pow']
+        num_motors = inputs['num_motors']
+        num_turbines = inputs['num_turbines']
         dt = inputs['dt']
         psfc = inputs['psfc']
         eta_gen = inputs['eta_gen']
@@ -50,13 +53,15 @@ class ComputeTurbine(om.ExplicitComponent):
         hy = inputs['hy']
 
         # Turbine power required (W)
-        turbine_pow_req = unit_shaft_pow_req * num_engines / eta_gen / eta_cbl / eta_pe / eta_motor * (1 - hy)
+        unit_turbine_pow = unit_shaft_pow * num_motors / eta_gen / eta_cbl / eta_pe / eta_motor *  hy / num_turbines
 
         # Fuel consumption (kg)
-        fuel_consumption = np.cumsum(turbine_pow_req * dt * psfc)
+        fuel_burn = np.cumsum(unit_turbine_pow * dt * psfc) * num_turbines
 
-        outputs['fuel_consumption'] = fuel_consumption    
-        outputs['turbine_pow_req'] = turbine_pow_req
+        outputs['fuel_burn'] = fuel_burn    
+        outputs['obj_func'] = fuel_burn[-1]
+        outputs['unit_turbine_pow'] = unit_turbine_pow
+
 
 
 if __name__ == "__main__":
@@ -66,8 +71,8 @@ if __name__ == "__main__":
     model = p.model
 
     ivc = om.IndepVarComp()
-    ivc.add_output('unit_shaft_pow_req', 1000, units='W')
-    ivc.add_output('num_engines', 2, units=None)
+    ivc.add_output('unit_shaft_pow', 1000, units='W')
+    ivc.add_output('num_motors', 2, units=None)
     ivc.add_output('dt', 1, units='s')
     ivc.add_output('psfc', 0.001, units='kg/s/W')
     ivc.add_output('eta_gen', 0.93, units=None)

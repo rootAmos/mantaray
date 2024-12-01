@@ -3,7 +3,8 @@ import openmdao.api as om
 
 
 
-class ComputePropThrustGen(om.ImplicitComponent):
+#class ComputePropThrustGen(om.ImplicitComponent):
+class ComputePropThrustGen(om.ExplicitComponent):
     """
     Compute the thrust produced by a propeller.
 
@@ -22,8 +23,8 @@ class ComputePropThrustGen(om.ImplicitComponent):
         self.add_input('d_blade', val=0, desc='blade diameter', units='m')
         self.add_input('d_hub', val=0, desc='hub diameter', units='m')
         self.add_input('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
-        self.add_input('unit_shaft_pow_gen', val= np.ones(self.options['n']), desc='power generated per engine', units='W')
-        self.add_input('num_engines', val=1, desc='number of engines', units=None)
+        self.add_input('unit_shaft_pow', val= np.ones(self.options['n']), desc='power generated per engine', units='W')
+        self.add_input('num_motors', val=1, desc='number of engines', units=None)
         self.add_input('vtas', val=np.ones(self.options['n']), desc='true airspeed', units='m/s')
         self.add_input('eta_prop', val=0.8, desc='propeller efficiency', units=None)
 
@@ -33,40 +34,45 @@ class ComputePropThrustGen(om.ImplicitComponent):
 
         self.declare_partials('*', '*', method='fd')
 
-    def apply_nonlinear(self, inputs, outputs, residuals):
+    #def apply_nonlinear(self, inputs, outputs, residuals):
+    def compute(self,inputs, outputs):
 
         # Unpack inputs
         eta_prop = inputs['eta_prop']
         d_blade = inputs['d_blade']
         d_hub = inputs['d_hub']
         rho = inputs['rho']
-        num_engines = inputs['num_engines']
+        num_motors = inputs['num_motors']
         vtas = inputs['vtas']
-        unit_shaft_pow_gen = inputs['unit_shaft_pow_gen']
+        unit_shaft_pow_req = inputs['unit_shaft_pow']
 
         # Unpack outputs
-        total_thrust_gen = outputs['total_thrust_gen']
+        # total_thrust_gen = outputs['total_thrust_gen']
 
-        unit_thrust_gen = total_thrust_gen / num_engines  
+        #unit_thrust_gen = total_thrust_gen / num_motors
         
-        diskarea = np.pi * ((d_blade/2)**2 - (d_hub/2)**2)
+        #diskarea = np.pi * ((d_blade/2)**2 - (d_hub/2)**2)
+
+        eta_prplsv = 0.96
+        #unit_propulsive_pow_req = unit_thrust_gen * vtas / eta_prplsv
 
         # Compute the power required [1] Eq 15-75
-        unit_propulsive_pow_req = unit_thrust_gen * vtas  + unit_thrust_gen ** 1.5/ np.sqrt(2 * rho * diskarea)
+        #unit_propulsive_pow_req = unit_thrust_gen * vtas  + unit_thrust_gen ** 1.5/ (2 * rho * diskarea) ** 0.5
 
         # Compute induced airspeed [1] Eq 15-76
-        v_ind = 0.5 * ( - vtas + np.sqrt( vtas**2 + unit_thrust_gen / (0.5 * rho * diskarea) ) )
+        #v_ind = 0.5 * ( - vtas + ( vtas**2 + unit_thrust_gen / (0.5 * rho * diskarea) )**0.5 )
         
         # Compute station 3 velocity [1] Eq 15-73
-        v3 = vtas + 2 * v_ind
+        #v3 = vtas + 2 * v_ind
 
         # Compute propeller efficiency [1] Eq 15-77
-        eta_prplsv = 2 / (1 + v3/vtas)    
+        #eta_prplsv = 2 / (1 + v3/vtas)
 
         # Compute the power required [1] Eq 15-78
-        unit_shaft_pow_req = unit_propulsive_pow_req / eta_prop / eta_prplsv
+        #unit_shaft_pow_calc = unit_propulsive_pow_req / eta_prop / eta_prplsv
 
-        residuals['total_thrust_gen'] = unit_shaft_pow_gen - unit_shaft_pow_req
+        #residuals['total_thrust_gen'] = unit_shaft_pow_req - unit_shaft_pow_calc
+        outputs['total_thrust_gen'] = unit_shaft_pow_req / vtas * eta_prplsv * eta_prop * num_motors
 
 
 if __name__ == "__main__":
@@ -79,8 +85,8 @@ if __name__ == "__main__":
     ivc.add_output('d_blade', 1.5, units='m')
     ivc.add_output('d_hub', 0.5, units='m')
     ivc.add_output('rho', 1.225, units='kg/m**3')
-    ivc.add_output('unit_shaft_pow_gen', 500e3, units='W')
-    ivc.add_output('num_engines', 2, units=None)
+    ivc.add_output('unit_shaft_pow', 500e3, units='W')
+    ivc.add_output('num_motors', 2, units=None)
     ivc.add_output('vtas', 100, units='m/s')
 
 

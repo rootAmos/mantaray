@@ -18,7 +18,7 @@ class ComputeAero(om.ExplicitComponent):
         self.add_input('Cd0', val=1, desc='zero-lift drag coefficient', units=None)
         self.add_input('e', val=1, desc='oswald efficiency factor', units=None)
         self.add_input('AR', val=1, desc='aspect ratio', units=None)
-        self.add_input('c', val=1, desc='speed of sound', units='m/s')
+        self.add_input('c', val=330 * np.ones(self.options['n']), desc='speed of sound', units='m/s')
         self.add_input('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
         self.add_input('CL', val= np.ones(self.options['n']), desc='lift coefficient', units=None)
 
@@ -46,7 +46,8 @@ class ComputeAero(om.ExplicitComponent):
 
         mach = vtas / c
 
-        CD_wave = np.where(mach > MCrit, wave_a * (mach/MCrit-1) ** wave_b, 0)
+        #CD_wave = np.where(mach > MCrit, wave_a * (mach/MCrit-1) ** wave_b, 0)
+        CD_wave =0
         CD = Cd0 + CL**2 / (np.pi * e * AR) + CD_wave
 
 

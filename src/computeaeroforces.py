@@ -14,13 +14,13 @@ class ComputeAeroForces(om.ExplicitComponent):
         # Inputs    
         self.add_input('CL', val= np.ones(self.options['n']), desc='lift coefficient', units=None)
         self.add_input('CD', val= np.ones(self.options['n']), desc='drag coefficient', units=None)
-        self.add_input('vtas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
         self.add_input('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
         self.add_input('S', val=1, desc='wing area', units='m**2')
+        self.add_input('ub', val= np.ones(self.options['n']), desc='airspeed in x-axis of fixed body frame', units='m/s')
 
         # Outputs
-        self.add_output('Lift', val= np.ones(self.options['n']), desc='lift force', units='N')
-        self.add_output('Drag', val= np.ones(self.options['n']), desc='drag force', units='N')
+        self.add_output('lift', val= np.ones(self.options['n']), desc='lift force', units='N')
+        self.add_output('drag', val= np.ones(self.options['n']), desc='drag force', units='N')
 
         self.declare_partials('*', '*', method='fd')
 
@@ -30,17 +30,17 @@ class ComputeAeroForces(om.ExplicitComponent):
         CL = inputs['CL']
         CD = inputs['CD']
         rho = inputs['rho']
-        vtas = inputs['vtas']
+        ub = inputs['ub']
         S = inputs['S']
 
 
-        Lift = 0.5 * rho * vtas**2 * S * CL
-        Drag = 0.5 * rho * vtas**2 * S * CD
+        Lift = 0.5 * rho * ub**2 * S * CL
+        Drag = 0.5 * rho * ub**2 * S * CD
 
 
         # Pack outputs
-        outputs['Lift'] = Lift
-        outputs['Drag'] = Drag
+        outputs['lift'] = Lift
+        outputs['drag'] = Drag
 
 
 if __name__ == "__main__":
@@ -71,5 +71,5 @@ if __name__ == "__main__":
     #om.n2(p)
     p.run_model()
 
-    print('Lift = ', p['ComputeAeroForces.Lift'])
-    print('Drag = ', p['ComputeAeroForces.Drag'])
+    print('Lift = ', p['ComputeAeroForces.lift'])
+    print('Drag = ', p['ComputeAeroForces.drag'])

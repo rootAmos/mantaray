@@ -27,6 +27,7 @@ class ComputeAtmos(om.ExplicitComponent):
         self.add_output('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
         self.add_output('temp', val= np.ones(self.options['n']), desc='air temperature', units='degC')
         self.add_output('pressure', val= np.ones(self.options['n']), desc='air pressure', units='Pa')
+        self.add_output('c', val= np.ones(self.options['n']), desc='speed of sound', units='m/s')
 
 
         self.declare_partials('*', '*', method='fd')
@@ -35,7 +36,8 @@ class ComputeAtmos(om.ExplicitComponent):
 
         # Unpack inputs
         z = inputs['z'] # altitude  (m)
-        
+
+
         # Temperature (degC)
         temp = np.where(z > 25000, -131.21 + 0.00299 * z, 
                         np.where(z > 11000, -56.55, 15.04 - 0.00649 * z))
@@ -49,9 +51,14 @@ class ComputeAtmos(om.ExplicitComponent):
         
         rho = pressure/(0.2869*(temp+273.1))
 
+
+        # Speed of sound (m/s)
+        c = (1.4*8.314/(28.96/1000)*(temp+273.1))
+
         outputs['rho'] = rho
         outputs['temp'] = temp
-        outputs['pressure'] = pressure * 1000 # convert to Pa
+        outputs['pressure'] = pressure
+        outputs['c'] = c
 
 
 if __name__ == "__main__":
