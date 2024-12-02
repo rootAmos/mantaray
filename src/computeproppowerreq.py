@@ -25,7 +25,7 @@ class ComputePropPowerReq(om.ExplicitComponent):
         self.add_input('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
         self.add_input('total_thrust_req', val= np.ones(self.options['n']), desc='total aircraft thrust required', units='N')
         self.add_input('num_motors', val=1, desc='number of engines', units=None)
-        self.add_input('utas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
+        self.add_input('vel', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
         self.options.declare('eta_prop', default=0.8, desc='propeller efficiency', units=None) 
         # Outputs
         self.add_output('unit_shaft_pow', val= np.ones(self.options['n']), desc='power required per engine', units='W')
@@ -42,22 +42,22 @@ class ComputePropPowerReq(om.ExplicitComponent):
         rho = inputs['rho']
         total_thrust_req = inputs['total_thrust_req']
         num_motors = inputs['num_motors']
-        utas = inputs['utas']
+        vel = inputs['vel']
 
         unit_thrust_req = total_thrust_req / num_motors  
         diskarea = np.pi * ((d_blade/2)**2 - (d_hub/2)**2)
 
         # Compute the power required [1] Eq 15-75
-        unit_propulsive_pow_req = unit_thrust_req * utas  + unit_thrust_req ** 1.5/ np.sqrt(2 * rho * diskarea)
+        unit_propulsive_pow_req = unit_thrust_req * vel  + unit_thrust_req ** 1.5/ np.sqrt(2 * rho * diskarea)
 
         # Compute induced airspeed [1] Eq 15-76
-        v_ind = 0.5 * ( - utas + np.sqrt( utas**2 + unit_thrust_req / (0.5 * rho * diskarea) ) )
+        v_ind = 0.5 * ( - vel + np.sqrt( vel**2 + unit_thrust_req / (0.5 * rho * diskarea) ) )
         
         # Compute station 3 velocity [1] Eq 15-73
-        v3 = utas + 2 * v_ind
+        v3 = vel + 2 * v_ind
 
         # Compute propulsive efficiency [1] Eq 15-77
-        eta_prplsv = 2 / (1 + v3/utas)    
+        eta_prplsv = 2 / (1 + v3/vel)    
 
         # Compute the power required [1] Eq 15-78
         unit_shaft_pow = unit_propulsive_pow_req / eta_prop / eta_prplsv

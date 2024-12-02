@@ -31,12 +31,11 @@ class ComputeTurbine(om.ExplicitComponent):
         self.add_input('hy', val=np.ones(self.options['n']), desc='hybridization ratio', units=None)
 
         # Outputs
-        self.add_output('fuel_burn', val= np.ones(self.options['n']), desc='fuel consumption profile', units='kg')
-        self.add_output('unit_turbine_pow', val=np.ones(self.options['n']), desc='turbine power required', units='W')
         self.add_output('obj_func', val= 1, desc='objective function. negative of total fuel consumption', units='kg')
 
 
-        self.declare_partials('*', '*', method='fd')
+    def setup_partials(self):
+        self.declare_partials('obj_func', '*')
 
     def compute(self, inputs, outputs):
 
@@ -58,10 +57,33 @@ class ComputeTurbine(om.ExplicitComponent):
         # Fuel consumption (kg)
         fuel_burn = np.cumsum(unit_turbine_pow * dt * psfc) * num_turbines
 
-        outputs['fuel_burn'] = fuel_burn    
         outputs['obj_func'] = fuel_burn[-1]
-        outputs['unit_turbine_pow'] = unit_turbine_pow
 
+    def compute_partials(self, inputs, J):
+
+        # Unpack inputs
+        unit_shaft_pow = inputs['unit_shaft_pow']
+        dt = inputs['dt']
+        psfc = inputs['psfc']
+        num_turbines = inputs['num_turbines']
+        num_motors = inputs['num_motors']
+        eta_gen = inputs['eta_gen']
+        eta_cbl = inputs['eta_cbl']
+        eta_pe = inputs['eta_pe']
+        eta_motor = inputs['eta_motor']
+        hy = inputs['hy']
+
+        # Compute partial derivatives
+        J['obj_func', 'unit_shaft_pow'] = np.sum(dt * psfc) * num_turbines * num_motors / eta_gen / eta_cbl / eta_pe / eta_motor * hy / num_turbines   
+        J['obj_func', 'dt'] = np.sum(unit_shaft_pow * psfc) * num_turbines * num_motors / eta_gen / eta_cbl / eta_pe / eta_motor * hy / num_turbines
+        J['obj_func', 'psfc'] = np.sum(unit_shaft_pow * dt) * num_turbines * num_motors / eta_gen / eta_cbl / eta_pe / eta_motor * hy / num_turbines
+        J['obj_func', 'num_turbines'] =0 
+        J['obj_func', 'num_motors'] = np.sum(unit_shaft_pow * dt * psfc) * num_turbines / eta_gen / eta_cbl / eta_pe / eta_motor * hy 
+        J['obj_func', 'eta_gen'] = -np.sum(unit_shaft_pow * dt * psfc) * num_turbines * num_motors / eta_gen**2 / eta_cbl / eta_pe / eta_motor * hy / num_turbines
+        J['obj_func', 'eta_cbl'] = -np.sum(unit_shaft_pow * dt * psfc) * num_turbines * num_motors / eta_gen / eta_cbl**2 / eta_pe / eta_motor * hy / num_turbines
+        J['obj_func', 'eta_pe'] = -np.sum(unit_shaft_pow * dt * psfc) * num_turbines * num_motors / eta_gen / eta_cbl / eta_pe**2 / eta_motor * hy / num_turbines
+        J['obj_func', 'eta_motor'] = -np.sum(unit_shaft_pow * dt * psfc) * num_turbines * num_motors / eta_gen / eta_cbl / eta_pe / eta_motor**2 * hy / num_turbines
+        J['obj_func', 'hy'] = np.sum(unit_shaft_pow * dt * psfc) * num_turbines / eta_gen / eta_cbl / eta_pe / eta_motor * hy / num_turbines
 
 
 if __name__ == "__main__":
@@ -76,6 +98,9 @@ if __name__ == "__main__":
     ivc.add_output('dt', 1, units='s')
     ivc.add_output('psfc', 0.001, units='kg/s/W')
     ivc.add_output('eta_gen', 0.93, units=None)
+    ivc.add_output('eta_cbl', 0.93, units=None)
+    ivc.add_output('eta_pe', 0.93, units=None)
+    ivc.add_output('eta_motor', 0.93, units=None)
     ivc.add_output('hy', 0.5, units=None)
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
@@ -94,6 +119,5 @@ if __name__ == "__main__":
     #om.n2(p)
     p.run_model()
 
-    print('fuel_consumption = ', p['ComputeTurbine.fuel_consumption'])
-    print('turbine_pow_req = ', p['ComputeTurbine.turbine_pow_req'])
+    print('fuel_consumption = ', p['ComputeTurbine.obj_func'])
 

@@ -22,7 +22,7 @@ class ComputeFanPowerReq(om.ExplicitComponent):
         self.add_input('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
         self.add_input('total_thrust_req', val= np.ones(self.options['n']), desc='total aircraft thrust required', units='N')
         self.add_input('num_motors', val=1, desc='number of engines', units=None)
-        self.add_input('utas', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
+        self.add_input('vel', val= np.ones(self.options['n']), desc='true airspeed', units='m/s')
         self.add_input('epsilon_r', val=1, desc='expansion ratio', units=None)
         self.add_input('eta_fan', val=1, desc='fan efficiency', units=None)
         self.add_input('eta_duct', val=1, desc='duct efficiency', units=None)
@@ -41,7 +41,7 @@ class ComputeFanPowerReq(om.ExplicitComponent):
         rho = inputs['rho']
         total_thrust_req = inputs['total_thrust_req']
         num_motors = inputs['num_motors']
-        utas = inputs['utas']
+        vel = inputs['vel']
         epsilon_r = inputs['epsilon_r']
         eta_fan = inputs['eta_fan']
         eta_duct = inputs['eta_duct']
@@ -50,16 +50,16 @@ class ComputeFanPowerReq(om.ExplicitComponent):
         diskarea = np.pi * ((d_blade/2)**2 - (d_hub/2)**2)
 
         # Compute the power required [1] Eq 15-90
-        unit_propulsive_pow_req = 3/4 * utas * unit_thrust_req + np.sqrt((unit_thrust_req **2 * utas**2 / 4 **2) + ( unit_thrust_req**3/ ( 4* rho * diskarea  * epsilon_r)))
+        unit_propulsive_pow_req = 3/4 * vel * unit_thrust_req + np.sqrt((unit_thrust_req **2 * vel**2 / 4 **2) + ( unit_thrust_req**3/ ( 4* rho * diskarea  * epsilon_r)))
 
         # Compute induced airspeed [1] Eq 15-91
-        v_ind = ( 0.5 * epsilon_r - 1)* utas + np.sqrt( (utas * epsilon_r /2)**2 + epsilon_r * unit_thrust_req  / (rho * diskarea) )
+        v_ind = ( 0.5 * epsilon_r - 1)* vel + np.sqrt( (vel * epsilon_r /2)**2 + epsilon_r * unit_thrust_req  / (rho * diskarea) )
         
         # Compute station 3 velocity [1] Eq 15-87
-        v3 = utas +  v_ind
+        v3 = vel +  v_ind
 
         # Compute propulsive efficiency [1] Eq 15-77
-        eta_prplsv = 2 / (1 + v3/utas)    
+        eta_prplsv = 2 / (1 + v3/vel)    
 
         # Compute the power required [1] Eq 15-78
         unit_shaft_pow = unit_propulsive_pow_req / eta_fan / eta_duct / eta_prplsv
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     ivc.add_output('rho', 1.225, units='kg/m**3')
     ivc.add_output('total_thrust_req', 10000, units='N')
     ivc.add_output('num_motors', 2, units=None)
-    ivc.add_output('utas', 100, units='m/s')
+    ivc.add_output('vel', 100, units='m/s')
     ivc.add_output('epsilon_r', 1.5, units=None) 
     ivc.add_output('eta_fan', 0.9, units=None)
     ivc.add_output('eta_duct', 0.9, units=None)

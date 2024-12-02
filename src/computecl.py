@@ -5,7 +5,7 @@ import openmdao.api as om
 
 class ComputeCL(om.ExplicitComponent):
     """
-    Compute the lift coefficient and angle of attack of aircraft. Ignores influence of HTP .
+    Compute the lift coefficient needed for an aircraft. Ignores influence of HTP .
     """
 
     def initialize(self):
@@ -17,47 +17,57 @@ class ComputeCL(om.ExplicitComponent):
 
         # Inputs    
         self.add_input('mass', val= 1, desc='mass', units='kg')
-        self.add_input('utas', val= 100*np.ones(self.options['n']), desc='true airspeed', units='m/s')
-        self.add_input('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
-        self.add_input('CLa', val=1, desc='lift curve slope', units='1/rad')
-        self.add_input('alpha_0', val=0, desc='zero lift angle of attack', units='rad')
-        self.add_input('alpha_i', val=0, desc='incidence angle', units='rad')
+        self.add_input('vel', val= 100*np.ones(self.options['n']), desc='true airspeed', units='m/s')
+        self.add_input('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')        
         self.add_input('gamma', val= np.ones(self.options['n']), desc='flight path angle', units='rad')
-        self.add_input('ub', val= 100*np.ones(self.options['n']), desc='airspeed in x-axis of fixed body frame', units='m/s')
         self.add_input('S', val= 30, desc='wing area', units='m**2')
 
         # Outputs
         self.add_output('CL', val= 0.7* np.ones(self.options['n']), desc='lift coefficient', units=None)
-        self.add_output('aofa', val= np.ones(self.options['n']), desc='angle of attack', units='rad')
 
-        self.declare_partials('*', '*', method='fd')
+    def setup_partials(self):
+        self.declare_partials('CL', 'mass')
+        self.declare_partials('CL', 'vel')
+        self.declare_partials('CL', 'rho')
+        self.declare_partials('CL', 'S')
+        self.declare_partials('CL', 'gamma')
+
 
     def compute(self, inputs, outputs):
 
         # Unpack inputs
         mass = inputs['mass']
-        ub = inputs['ub']
+        vel = inputs['vel']
         rho = inputs['rho']
-        CLa = inputs['CLa']
-        alpha_0 = inputs['alpha_0']
-        alpha_i = inputs['alpha_i']
         gamma = inputs['gamma']
         S = inputs['S']
         
-
         # Unpack constants
         g = self.options['g']
 
         # Lift coefficient Required
-        CL = mass * g * np.cos(gamma) / ( 0.5 * rho * ub**2 * S  )
-
-        # Angle of attack
-        aofa = (CL / CLa )+ alpha_0 - alpha_i
+        cl = mass * g * np.cos(gamma) / ( 0.5 * rho * vel**2 * S  )
 
         # Pack outputs
-        outputs['aofa'] = aofa
-        outputs['CL'] = CL
+        outputs['CL'] = cl
 
+    def compute_partials(self, inputs, J):
+
+        # Unpack inputs
+        mass = inputs['mass']
+        vel = inputs['vel']
+        rho = inputs['rho']
+        S = inputs['S']
+        gamma = inputs['gamma']
+
+        # Unpack constants
+        g = self.options['g']
+
+        J['CL', 'mass'] = g * np.cos(gamma) / ( 0.5 * rho * vel**2 * S  )
+        J['CL', 'vel'] = -mass * g * np.cos(gamma) / ( 0.5 * rho * vel**3 * S  )
+        J['CL', 'rho'] = -mass * g * np.cos(gamma) / ( 0.5 * rho**2 * vel**2 * S  )
+        J['CL', 'S'] = -mass * g * np.cos(gamma) / ( 0.5 * rho * vel**2 * S**2  )
+        J['CL', 'gamma'] = -mass * g * np.sin(gamma) / ( 0.5 * rho * vel**2 * S  )
 
 if __name__ == "__main__":
     import openmdao.api as om
@@ -68,8 +78,8 @@ if __name__ == "__main__":
     ivc = om.IndepVarComp()
     ivc.add_output('rho', 1.225, units='kg/m**3')
     ivc.add_output('mass', 8600, units='kg')
-    ivc.add_output('aofa', 3 * np.pi/180, units='rad')
-    ivc.add_output('utas', 100, units='m/s')
+    ivc.add_output('gamma', 3 * np.pi/180, units='rad')
+    ivc.add_output('vel', 100, units='m/s')
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
     model.add_subsystem('ComputeCL', ComputeCL(), promotes_inputs=['*'])

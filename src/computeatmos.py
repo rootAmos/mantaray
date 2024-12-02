@@ -21,35 +21,20 @@ class ComputeAtmos(om.ExplicitComponent):
 
 
         # Inputs    
-        self.add_input('dt', val= np.ones(self.options['n']), desc='time step', units='s')
-        self.add_input('z0', val= 0, desc='initial altitude', units='m')
-        self.add_input('gamma', val= np.ones(self.options['n']) * 0, desc='flight path angle', units='rad')
-        self.add_input('utas', val= np.ones(self.options['n']) * 0, desc='true airspeed', units='m/s')
+        self.add_input('z', val= np.ones(self.options['n']), desc='trajectory in the z-axis of earth fixed body frame', units='m')
 
         # Outputs
         self.add_output('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')
         self.add_output('temp', val= np.ones(self.options['n']), desc='air temperature', units='degC')
         self.add_output('pressure', val= np.ones(self.options['n']), desc='air pressure', units='Pa')
-        self.add_output('c', val= np.ones(self.options['n']), desc='speed of sound', units='m/s')
-
 
         self.declare_partials('*', '*', method='fd')
 
     def compute(self, inputs, outputs):
 
-        # Unpack inputs
-        vz = inputs['vz'] # vertical speed (m/s)
-        dt = inputs['dt'] # time step (s)   
-        z0 = inputs['z0'] # initial altitude (m)
-        gamma = inputs['gamma'] # flight path angle (rad)
-        utas = inputs['utas'] # true airspeed (m/s)
+        # Unpack inputs 
+        z = inputs['z'] #  altitude (m)
     
-
-        vz = utas * np.sin(gamma)
-
-        z = np.cumsum(vz * dt) + z0
-
-
         # Temperature (degC)
         temp = np.where(z > 25000, -131.21 + 0.00299 * z, 
                         np.where(z > 11000, -56.55, 15.04 - 0.00649 * z))
@@ -70,8 +55,6 @@ class ComputeAtmos(om.ExplicitComponent):
         outputs['rho'] = rho
         outputs['temp'] = temp
         outputs['pressure'] = pressure
-        outputs['c'] = c
-
 
 if __name__ == "__main__":
     import openmdao.api as om

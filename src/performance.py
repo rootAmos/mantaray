@@ -6,22 +6,23 @@ import openmdao.api as om
 from openmdao.api import NewtonSolver, DirectSolver, ArmijoGoldsteinLS, Problem, Group
 
 
-from src.computecl import ComputeCL
-from src.computekinematics import ComputeKinematics
-from src.computeaeroforces import ComputeAeroForces
-from src.computeturbine import ComputeTurbine
-from src.computebatterydischarge import ComputeBatteryDischarge
-from src.computeaero import ComputeAero
-from src.computepropthrustgen import ComputePropThrustGen   
-from src.computevelocities import ComputeVelocities
-from src.computeatmos import ComputeAtmos
-from src.computeduration import ComputeDuration
-from src.computetrajectories import ComputeTrajectories
+from computecl import ComputeCL
+from computekinematics import ComputeKinematics
+from computeaeroforces import ComputeAeroForces
+from computeturbine import ComputeTurbine
+from computebatterydischarge import ComputeBatteryDischarge
+from computeaero import ComputeAero
+from computepropthrustgen import ComputePropThrustGen   
+from computevelocities import ComputeVelocities
+from computeatmos import ComputeAtmos
+from computeduration import ComputeDuration
+from computetrajectories import ComputeTrajectories
+from computeaoa import ComputeAofA
+from computetimestep import ComputeTimeStep
+from computeacceleration import ComputeAcceleration
 
 """
-A python tool to size electric power trains and electric subsystems for aircraft.
-
-Copyright Bauhaus Luftfahrt e.V.
+Compute the performance of the aircraft during climb
 """
 
 # Futures
@@ -36,14 +37,15 @@ class Performance(om.Group):
     def initialize(self):
         self.options.declare('n', default=1, desc='number of points')
         self.options.declare('g', default=9.806, desc='gravitational acceleration')
-        self.options.declare('wave_a', default=0.825, desc='wave drag a term')
-        self.options.declare('wave_b', default=2.61, desc='wave drag b term')
-        self.options.declare('MCrit', default=0.9, desc='critical mach number')
 
     def setup(self):
 
 
-
+        self.add_subsystem(name='ComputeTimeStep',
+                           subsys=ComputeTimeStep(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+        
         self.add_subsystem(name='ComputeAtmos',
                            subsys=ComputeAtmos(n=self.options['n']),
                            promotes_inputs=['*'],
@@ -60,13 +62,16 @@ class Performance(om.Group):
                            subsys=ComputeCL(n=self.options['n'], g=self.options['g']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
+        
+        self.add_subsystem(name='ComputeAoA',
+                           subsys=ComputeAofA(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+        
 
         self.add_subsystem(name='ComputeAero',
                            subsys=ComputeAero(
-                               n=self.options['n'], 
-                               wave_a=self.options['wave_a'], 
-                               wave_b=self.options['wave_b'], 
-                               MCrit=self.options['MCrit']),
+                               n=self.options['n']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
 
@@ -85,8 +90,17 @@ class Performance(om.Group):
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
 
+
+        
+        self.add_subsystem(name='ComputeAcceleration',
+                           subsys=ComputeAcceleration(n=self.options['n'], g=self.options['g']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+        
+
+
         self.add_subsystem(name='ComputeVelocities',
-                           subsys=ComputeVelocities(n=self.options['n'], g=self.options['g']),
+                           subsys=ComputeVelocities(n=self.options['n']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
 
@@ -104,6 +118,8 @@ class Performance(om.Group):
                            subsys=ComputeTrajectories(n=self.options['n']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
+
+        self.set_input_defaults('vel',50 * np.ones(self.options['n']))
 
 
         self.nonlinear_solver = NewtonSolver()
@@ -140,7 +156,7 @@ if __name__ == "__main__":
     ivc.add_output('z1', val = 30000 * 0.3048, units ='m', desc='end altitude')
 
     # Velocity
-    ivc.add_output('u0', val=50, units='m/s', desc='initial velocity in longitudinal direction of body-fixed frame') # v2 speed assumption
+    ivc.add_output('v0', val=50, units='m/s', desc='initial velocity in longitudinal direction of body-fixed frame') # v2 speed assumption
     ivc.add_output('gamma', val=0 * np.ones(n), units='rad', desc='flight path angle')
 
     # Aircraft geometry
@@ -196,6 +212,8 @@ if __name__ == "__main__":
 
     # Analysis
     p.setup()
+    # data = p.check_partials(method='fd')
+
     om.n2(p)
     p.run_model()
 
@@ -227,7 +245,7 @@ if __name__ == "__main__":
 
     print('Ending Altitude (ft) = ', p['z1'] * 0.3048)
     print('Flight path angle profile (deg) = ', p['gamma'] * 180/np.pi)
-    print('True airspeed profile (m/s) = ', p['utas'])  
+    print('True airspeed profile (m/s) = ', p['vel'])  
     print('Time profile (s) = ', p['t'])
     print('Battery state of charge profile (%) = ', p['soc'] * 100)
     print('Fuel consumption (kg) = ', p['obj_func'])

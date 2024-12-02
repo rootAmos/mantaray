@@ -11,43 +11,68 @@ class ComputeTrajectories(om.ExplicitComponent):
 
     def setup(self):
 
-        # Inputs    
-        self.add_input('x0', val=  0, desc='initial distance', units='m')
-        self.add_input('utas', val= np.ones(self.options['n']) * 0, desc='true airspeed', units='m/s')
-        self.add_input('t0', val= 0, desc='initial time', units='s')
-        self.add_input('t1', val= 0, desc='end time', units='s')
-        self.add_input('gamma',val = 1 * np.pi/180 * np.ones(self.options['n']), desc='flight path angle', units='rad')
+        # Inputs 
+        self.add_input('z0', val=  0, desc='initial distance in z-dir of earth fixed body frame', units='m')
+        self.add_input('x0', val=  0, desc='initial distance in x-dir of earth fixed body frame', units='m')
+        self.add_input('vx', val= np.ones(self.options['n']), desc='horizontal velocity in the earth frame', units='m/s')
+        self.add_input('vz', val= np.ones(self.options['n']), desc='vertical velocity in the earth frame', units='m/s')
+        self.add_input('dt', val= np.ones(self.options['n']), desc='time step', units='s')
 
 
         # Outputs
         self.add_output('x', val= np.ones(self.options['n']), desc='trajectory in the x-axis', units='m')
-        self.add_output('dt', val=np.ones(self.options['n']), desc='time step', units='s')
+        self.add_output('z', val= np.ones(self.options['n']), desc='trajectory in the z-axis', units='m')
 
-        self.declare_partials('*', '*', method='fd')
+
+    def setup_partials(self):
+
+        self.declare_partials('x', 'vx')
+        self.declare_partials('x', 'dt')
+        self.declare_partials('x', 'x0')
+        self.declare_partials('z', 'vz')
+        self.declare_partials('z', 'dt')
+        self.declare_partials('z', 'z0')
+
 
     def compute(self, inputs, outputs):
 
         # Unpack inputs
         x0 = inputs['x0']
-        utas = inputs['utas']
-        t0 = inputs['t0']
-        t1 = inputs['t1']
-        gamma = inputs['gamma']
+        z0 = inputs['z0']
+        vx = inputs['vx']
+        vz = inputs['vz']
+        dt = inputs['dt']
 
         # Unpack options
         n = self.options['n']
 
-        t = np.linspace(t0, t1, n).flatten()
-        dt = np.diff(t)
-        dt = np.append(0, dt)
-
         # Compute distance, time, and altitude
-        vx = utas * np.cos(gamma)
         x = np.cumsum(vx * dt) + x0
+        z = np.cumsum(vz * dt) + z0
 
         # Pack outputs
         outputs['x'] = x
-        outputs['dt'] = dt
+        outputs['z'] = z
+
+    def compute_partials(self, inputs, J):
+
+        # Unpack inputs
+        vx = inputs['vx']
+        vz = inputs['vz']
+        dt = inputs['dt']
+
+        J['x', 'vx'] = dt
+        J['x', 'dt'] = vx
+        J['x', 'x0'] = 1
+
+
+        J['z', 'vz'] = dt
+        J['z', 'dt'] = vz
+        J['z', 'z0'] = 1
+
+
+
+    
 
 if __name__ == "__main__":
     import openmdao.api as om
@@ -59,10 +84,11 @@ if __name__ == "__main__":
 
     ivc = om.IndepVarComp()
     ivc.add_output('vx', 100 * np.ones(n), units='m/s')
-    ivc.add_output('t0', 0, units='s')
-    ivc.add_output('t1', 10*60, units='s')
+    ivc.add_output('vz', 3 * np.ones(n), units='m/s')
+    ivc.add_output('dt', 0.1 * np.ones(n), units='s')
 
     ivc.add_output('x0', 0, units='m')
+    ivc.add_output('z0', 0, units='m')
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
     model.add_subsystem('ComputeTrajectories', ComputeTrajectories(n = n), promotes_inputs=['*'])
