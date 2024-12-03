@@ -44,9 +44,11 @@ class ComputeVelocities(om.ExplicitComponent):
         dt = inputs['dt']
         acc = inputs['acc']
 
+        n = self.options['n']
+
         # Compute partials
-        J['vel', 'acc'] = dt
-        J['vel', 'dt'] = acc
+        J['vel', 'acc'] = np.eye(n) * dt
+        J['vel', 'dt'] = np.eye(n) * acc
         J['vel', 'v0'] = 1
 
 

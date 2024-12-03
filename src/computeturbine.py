@@ -73,17 +73,19 @@ class ComputeTurbine(om.ExplicitComponent):
         eta_motor = inputs['eta_motor']
         hy = inputs['hy']
 
+        n = self.options['n']
+
         # Compute partial derivatives
         J['obj_func', 'unit_shaft_pow'] = np.sum(dt * psfc) * num_turbines * num_motors / eta_gen / eta_cbl / eta_pe / eta_motor * hy / num_turbines   
         J['obj_func', 'dt'] = np.sum(unit_shaft_pow * psfc) * num_turbines * num_motors / eta_gen / eta_cbl / eta_pe / eta_motor * hy / num_turbines
         J['obj_func', 'psfc'] = np.sum(unit_shaft_pow * dt) * num_turbines * num_motors / eta_gen / eta_cbl / eta_pe / eta_motor * hy / num_turbines
         J['obj_func', 'num_turbines'] =0 
-        J['obj_func', 'num_motors'] = np.sum(unit_shaft_pow * dt * psfc) * num_turbines / eta_gen / eta_cbl / eta_pe / eta_motor * hy 
-        J['obj_func', 'eta_gen'] = -np.sum(unit_shaft_pow * dt * psfc) * num_turbines * num_motors / eta_gen**2 / eta_cbl / eta_pe / eta_motor * hy / num_turbines
-        J['obj_func', 'eta_cbl'] = -np.sum(unit_shaft_pow * dt * psfc) * num_turbines * num_motors / eta_gen / eta_cbl**2 / eta_pe / eta_motor * hy / num_turbines
-        J['obj_func', 'eta_pe'] = -np.sum(unit_shaft_pow * dt * psfc) * num_turbines * num_motors / eta_gen / eta_cbl / eta_pe**2 / eta_motor * hy / num_turbines
-        J['obj_func', 'eta_motor'] = -np.sum(unit_shaft_pow * dt * psfc) * num_turbines * num_motors / eta_gen / eta_cbl / eta_pe / eta_motor**2 * hy / num_turbines
-        J['obj_func', 'hy'] = np.sum(unit_shaft_pow * dt * psfc) * num_turbines / eta_gen / eta_cbl / eta_pe / eta_motor * hy / num_turbines
+        J['obj_func', 'num_motors'] = np.sum(unit_shaft_pow * dt * psfc * hy) * num_turbines / eta_gen / eta_cbl / eta_pe / eta_motor 
+        J['obj_func', 'eta_gen'] = -np.sum(unit_shaft_pow * dt * psfc * hy) * num_turbines * num_motors / eta_gen**2 / eta_cbl / eta_pe / eta_motor 
+        J['obj_func', 'eta_cbl'] = -np.sum(unit_shaft_pow * dt * psfc * hy) * num_turbines * num_motors / eta_gen / eta_cbl**2 / eta_pe / eta_motor 
+        J['obj_func', 'eta_pe'] = -np.sum(unit_shaft_pow * dt * psfc * hy) * num_turbines * num_motors / eta_gen / eta_cbl / eta_pe**2 / eta_motor 
+        J['obj_func', 'eta_motor'] = -np.sum(unit_shaft_pow * dt * psfc * hy) * num_turbines * num_motors / eta_gen / eta_cbl / eta_pe / eta_motor**2 
+        J['obj_func', 'hy'] =  np.sum(unit_shaft_pow * dt * psfc) * num_turbines / eta_gen / eta_cbl / eta_pe / eta_motor * hy / num_turbines
 
 
 if __name__ == "__main__":

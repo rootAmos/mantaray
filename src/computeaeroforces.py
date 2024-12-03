@@ -60,15 +60,17 @@ class ComputeAeroForces(om.ExplicitComponent):
         vel = inputs['vel']
         S = inputs['S']
 
-        J['lift', 'CL'] = 0.5 * rho * vel**2 * S
-        J['lift', 'vel'] = 0.5 * rho * 2 * S * CL * vel
-        J['lift', 'S'] = 0.5 * rho * vel**2 * CL
-        J['lift', 'rho'] = 0.5 * vel**2 * S * CL
+        n = self.options['n']
 
-        J['drag', 'CD'] = 0.5 * rho * vel**2 * S
-        J['drag', 'vel'] = 0.5 * rho * 2 * S * CD
-        J['drag', 'S'] = 0.5 * rho * vel**2 * CD
-        J['drag', 'rho'] = 0.5 * vel**2 * S * CD
+        J['lift', 'CL'] = np.eye(n) * 0.5 * rho * vel**2 * S
+        J['lift', 'vel'] = np.eye(n) * 0.5 * rho * 2 * S * CL * vel
+        J['lift', 'S'] = 0.5 * rho * vel**2 * CL
+        J['lift', 'rho'] = np.eye(n) * 0.5 * vel**2 * S * CL
+
+        J['drag', 'CD'] = np.eye(n) * 0.5 * rho * vel**2 * S
+        J['drag', 'vel'] = np.eye(n) * 0.5 * rho * 2 * S * CD
+        J['drag', 'S'] =  0.5 * rho * vel**2 * CD
+        J['drag', 'rho'] = np.eye(n) * 0.5 * vel**2 * S * CD
 
 
 if __name__ == "__main__":

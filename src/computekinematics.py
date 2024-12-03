@@ -46,11 +46,13 @@ class ComputeKinematics(om.ExplicitComponent):
         gamma = inputs['gamma']
         vel = inputs['vel']
 
+        n = self.options['n']
+
         # Compute partials
-        J['vx', 'vel'] = np.cos(gamma)
-        J['vx', 'gamma'] = -vel * np.sin(gamma)
-        J['vz', 'vel'] = np.sin(gamma)
-        J['vz', 'gamma'] = vel * np.cos(gamma)
+        J['vx', 'vel'] = np.eye(n) * np.cos(gamma)
+        J['vx', 'gamma'] = np.eye(n) * -vel * np.sin(gamma)
+        J['vz', 'vel'] = np.eye(n) * np.sin(gamma)
+        J['vz', 'gamma'] = np.eye(n) * vel * np.cos(gamma)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ import openmdao.api as om
 
 
 
-class ComputeAcceleration(om.ExplicitComponent):
+class ComputeThrust(om.ExplicitComponent):
 
     def initialize(self):
         self.options.declare('n', default=1, desc='number of data points')
@@ -14,42 +14,41 @@ class ComputeAcceleration(om.ExplicitComponent):
 
         # Inputs    
         self.add_input('drag', val= np.ones(self.options['n']), desc='drag force', units='N')
-        self.add_input('total_thrust_gen', val= np.ones(self.options['n']), desc='thrust force', units='N')
         self.add_input('mass', val=1, desc='mass', units='kg')
         self.add_input('gamma', val= np.ones(self.options['n']), desc='flight path angle', units='rad')
+        self.add_input('acc', val= np.zeros(self.options['n']), desc='acceleration in longitudinal direction of body-fixed frame', units='m/s**2')
 
         # Outputs
-        self.add_output('acc', val= np.zeros(self.options['n']), desc='acceleration in longitudinal direction of body-fixed frame', units='m/s**2')
+        self.add_output('total_thrust_gen', val= np.ones(self.options['n']), desc='thrust force', units='N')
 
     def setup_partials(self):
-        self.declare_partials('acc', 'drag')    
-        self.declare_partials('acc', 'total_thrust_gen')
-        self.declare_partials('acc', 'mass')
-        self.declare_partials('acc', 'gamma')
+        self.declare_partials('total_thrust_gen', 'drag')    
+        self.declare_partials('total_thrust_gen', 'mass')
+        self.declare_partials('total_thrust_gen', 'gamma')
+        self.declare_partials('total_thrust_gen', 'acc')
 
     def compute(self, inputs, outputs):
 
         # Unpack inputs
         Drag = inputs['drag']
-        Thrust = inputs['total_thrust_gen']
         mass = inputs['mass']
         gamma = inputs['gamma']
+        acc = inputs['acc']
 
         # Unpack constants
         g = self.options['g']
 
         # Accelerations in the body-fixed frame
-        acc  = (Thrust - Drag - mass * g * np.sin(gamma)) / mass
+        thrust = mass * acc + Drag + mass * g * np.sin(gamma)
     
         # Pack outputs
-        outputs['acc'] = acc
+        outputs['total_thrust_gen'] = thrust
 
     def compute_partials(self, inputs, J):
 
         # Unpack inputs
-        Drag = inputs['drag']
-        Thrust = inputs['total_thrust_gen']
         mass = inputs['mass']
+        acc = inputs['acc']
         gamma = inputs['gamma']
 
         # Unpack constants
@@ -57,10 +56,10 @@ class ComputeAcceleration(om.ExplicitComponent):
         n = self.options['n']
 
         # Compute partials
-        J['acc', 'drag'] = np.eye(n) * -1 / mass
-        J['acc', 'total_thrust_gen'] = np.eye(n) * 1 / mass
-        J['acc', 'mass'] = -(Thrust - Drag  - g * np.sin(gamma)) / mass**2
-        J['acc', 'gamma'] = np.eye(n) * -mass * g * np.cos(gamma) / mass
+        J['total_thrust_gen', 'drag'] = np.eye(n) 
+        J['total_thrust_gen', 'mass'] = acc 
+        J['total_thrust_gen', 'gamma'] = np.eye(n) * mass * g * np.cos(gamma)
+        J['total_thrust_gen', 'acc'] = mass * np.eye(n)
 
 
 if __name__ == "__main__":
@@ -69,16 +68,17 @@ if __name__ == "__main__":
     p = om.Problem()
     model = p.model
 
+    n = 10
+
     ivc = om.IndepVarComp()
-    ivc.add_output('total_thrust_gen', 1000, units='N')
-    ivc.add_output('lift', 1000, units='N')
-    ivc.add_output('drag', 100, units='N')
+    ivc.add_output('acc', 0.1 * np.ones(n), units='m/s**2')
+    ivc.add_output('drag', 1000 * np.ones(n), units='N')
     ivc.add_output('mass', 8600, units='kg')
-    ivc.add_output('gamma', 0, units='rad')
+    ivc.add_output('gamma', 0 * np.ones(n), units='rad')
 
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
-    model.add_subsystem('ComputeAcceleration', ComputeAcceleration(), promotes_inputs=['*'])
+    model.add_subsystem('ComputeThrust', ComputeThrust(n=n), promotes_inputs=['*'])
 
     model.nonlinear_solver = om.NewtonSolver()
     model.linear_solver = om.DirectSolver()
@@ -93,4 +93,4 @@ if __name__ == "__main__":
     #om.n2(p)
     p.run_model()
 
-    print('acc = ', p['ComputeAcceleration.acc'])
+    print('thrust = ', p['ComputeThrust.total_thrust_gen'])

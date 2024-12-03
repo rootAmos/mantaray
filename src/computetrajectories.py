@@ -12,16 +12,16 @@ class ComputeTrajectories(om.ExplicitComponent):
     def setup(self):
 
         # Inputs 
-        self.add_input('z0', val=  0, desc='initial distance in z-dir of earth fixed body frame', units='m')
+        #self.add_input('z0', val=  0, desc='initial distance in z-dir of earth fixed body frame', units='m')
         self.add_input('x0', val=  0, desc='initial distance in x-dir of earth fixed body frame', units='m')
         self.add_input('vx', val= np.ones(self.options['n']), desc='horizontal velocity in the earth frame', units='m/s')
-        self.add_input('vz', val= np.ones(self.options['n']), desc='vertical velocity in the earth frame', units='m/s')
+        #self.add_input('vz', val= np.ones(self.options['n']), desc='vertical velocity in the earth frame', units='m/s')
         self.add_input('dt', val= np.ones(self.options['n']), desc='time step', units='s')
 
 
         # Outputs
         self.add_output('x', val= np.ones(self.options['n']), desc='trajectory in the x-axis', units='m')
-        self.add_output('z', val= np.ones(self.options['n']), desc='trajectory in the z-axis', units='m')
+        #self.add_output('z', val= np.ones(self.options['n']), desc='trajectory in the z-axis', units='m')
 
 
     def setup_partials(self):
@@ -29,18 +29,18 @@ class ComputeTrajectories(om.ExplicitComponent):
         self.declare_partials('x', 'vx')
         self.declare_partials('x', 'dt')
         self.declare_partials('x', 'x0')
-        self.declare_partials('z', 'vz')
-        self.declare_partials('z', 'dt')
-        self.declare_partials('z', 'z0')
+        #self.declare_partials('z', 'vz')
+        #self.declare_partials('z', 'dt')
+        #self.declare_partials('z', 'z0')
 
 
     def compute(self, inputs, outputs):
 
         # Unpack inputs
         x0 = inputs['x0']
-        z0 = inputs['z0']
+        #z0 = inputs['z0']
         vx = inputs['vx']
-        vz = inputs['vz']
+        #vz = inputs['vz']
         dt = inputs['dt']
 
         # Unpack options
@@ -48,27 +48,29 @@ class ComputeTrajectories(om.ExplicitComponent):
 
         # Compute distance, time, and altitude
         x = np.cumsum(vx * dt) + x0
-        z = np.cumsum(vz * dt) + z0
+        #z = np.cumsum(vz * dt) + z0
 
         # Pack outputs
         outputs['x'] = x
-        outputs['z'] = z
+        #outputs['z'] = z
 
     def compute_partials(self, inputs, J):
 
         # Unpack inputs
         vx = inputs['vx']
-        vz = inputs['vz']
+        #vz = inputs['vz']
         dt = inputs['dt']
 
-        J['x', 'vx'] = dt
-        J['x', 'dt'] = vx
+        n = self.options['n']
+
+        J['x', 'vx'] = np.eye(n) * dt
+        J['x', 'dt'] = np.eye(n) * vx
         J['x', 'x0'] = 1
 
 
-        J['z', 'vz'] = dt
-        J['z', 'dt'] = vz
-        J['z', 'z0'] = 1
+        #J['z', 'vz'] = np.eye(n) * dt
+        #J['z', 'dt'] = np.eye(n) * vz
+        #J['z', 'z0'] = 1
 
 
 

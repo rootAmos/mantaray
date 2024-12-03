@@ -3,7 +3,7 @@ import openmdao.api as om
 
 
 
-class ComputeAero(om.ExplicitComponent):
+class ComputeCD(om.ExplicitComponent):
 
     def initialize(self):
         self.options.declare('n', default=1, desc='number of data points')
@@ -23,7 +23,7 @@ class ComputeAero(om.ExplicitComponent):
         self.add_input('CL', val= np.ones(self.options['n']), desc='lift coefficient', units=None)
 
         # Outputs
-        self.add_output('CD', val= np.ones(self.options['n']), desc='drag coefficient', units=None)
+        self.add_output('CD', val= np.ones(self.options['n']), desc='drag coefficient', units=None, lower=0, upper=1)
 
 
     def compute(self, inputs, outputs):
@@ -46,7 +46,9 @@ class ComputeAero(om.ExplicitComponent):
         e = inputs['e']
         AR = inputs['AR']
 
-        J['CD', 'CL'] = 2 * CL  / (np.pi * e * AR)
+        n = self.options['n']
+
+        J['CD', 'CL'] = np.eye(n)* 2 * CL  / (np.pi * e * AR)
         J['CD', 'Cd0'] = 1
         J['CD', 'e'] = -CL**2 / (np.pi * e**2 * AR)
         J['CD', 'AR'] = -CL**2 / (np.pi * e * AR**2)
@@ -64,7 +66,7 @@ if __name__ == "__main__":
     ivc.add_output('CL', 0.5, units=None)   
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
-    model.add_subsystem('ComputeAero', ComputeAero(), promotes_inputs=['*'])
+    model.add_subsystem('ComputeCD', ComputeCD(), promotes_inputs=['*'])
 
     model.nonlinear_solver = om.NewtonSolver()
     model.linear_solver = om.DirectSolver()
@@ -79,4 +81,4 @@ if __name__ == "__main__":
     #om.n2(p)
     p.run_model()
 
-    print('CD = ', p['ComputeAero.CD'])
+    print('CD = ', p['ComputeCD.CD'])

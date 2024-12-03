@@ -49,10 +49,12 @@ class ComputeAofA(om.ExplicitComponent):
         # Unpack inputs
         CLa = inputs['CLa']
 
+        n = self.options['n']
+
         # Unpack constants
-        J['aofa', 'CL'] = 1 / CLa
+        J['aofa', 'CL'] = np.eye(n) * 1 / CLa
         J['aofa', 'CLa'] = -1 / CLa**2
-        J['aofa', 'alpha_0'] = 1
+        J['aofa', 'alpha_0'] =  1
         J['aofa', 'alpha_i'] = -1
 
 

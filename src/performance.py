@@ -11,7 +11,7 @@ from computekinematics import ComputeKinematics
 from computeaeroforces import ComputeAeroForces
 from computeturbine import ComputeTurbine
 from computebatterydischarge import ComputeBatteryDischarge
-from computeaero import ComputeAero
+from computecd import ComputeCD
 from computepropthrustgen import ComputePropThrustGen   
 from computevelocities import ComputeVelocities
 from computeatmos import ComputeAtmos
@@ -20,7 +20,11 @@ from computetrajectories import ComputeTrajectories
 from computeaoa import ComputeAofA
 from computetimestep import ComputeTimeStep
 from computeacceleration import ComputeAcceleration
-
+from computevelocity import ComputeVelocity
+from computeproppowerreq import ComputePropPowerReq
+from computethrust import ComputeThrust
+from computepropeta import ComputePropEta
+from computeinducedvelocity import ComputeInducedVelocity
 """
 Compute the performance of the aircraft during climb
 """
@@ -41,8 +45,31 @@ class Performance(om.Group):
     def setup(self):
 
 
+
+        
+        self.add_subsystem(name='ComputeVelocity',
+                           subsys=ComputeVelocity(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+
+
+        self.add_subsystem(name='ComputeKinematics',
+                           subsys=ComputeKinematics(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+        
+        self.add_subsystem(name='ComputeDuration',
+                           subsys=ComputeDuration(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+        
         self.add_subsystem(name='ComputeTimeStep',
                            subsys=ComputeTimeStep(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+
+        self.add_subsystem(name='ComputeTrajectories',
+                           subsys=ComputeTrajectories(n=self.options['n']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
         
@@ -51,17 +78,36 @@ class Performance(om.Group):
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
 
+
+        self.add_subsystem(name='ComputeInducedVelocity',
+                           subsys=ComputeInducedVelocity(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+        
+        self.add_subsystem(name='ComputePropEta',
+                           subsys=ComputePropEta(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+        
+        self.add_subsystem(name='ComputePropPowerReq',
+                           subsys=ComputePropPowerReq(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+
+
+        """ 
         self.add_subsystem(name='ComputePropThrustGen',
                            subsys=ComputePropThrustGen(n=self.options['n']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
 
-
-
         self.add_subsystem(name='ComputeCL',
                            subsys=ComputeCL(n=self.options['n'], g=self.options['g']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
+        """
+        
+
         
         self.add_subsystem(name='ComputeAoA',
                            subsys=ComputeAofA(n=self.options['n']),
@@ -69,14 +115,19 @@ class Performance(om.Group):
                            promotes_outputs=['*'])
         
 
-        self.add_subsystem(name='ComputeAero',
-                           subsys=ComputeAero(
+        self.add_subsystem(name='ComputeCD',
+                           subsys=ComputeCD(
                                n=self.options['n']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
 
         self.add_subsystem(name='ComputeAeroForces',
                            subsys=ComputeAeroForces(n=self.options['n']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+        
+        self.add_subsystem(name='ComputeThrust',
+                           subsys=ComputeThrust(n=self.options['n'], g=self.options['g']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
 
@@ -92,43 +143,21 @@ class Performance(om.Group):
 
 
         
+        """ 
         self.add_subsystem(name='ComputeAcceleration',
                            subsys=ComputeAcceleration(n=self.options['n'], g=self.options['g']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
-        
-
-
-        self.add_subsystem(name='ComputeVelocities',
-                           subsys=ComputeVelocities(n=self.options['n']),
-                           promotes_inputs=['*'],
-                           promotes_outputs=['*'])
-
-        self.add_subsystem(name='ComputeKinematics',
-                           subsys=ComputeKinematics(n=self.options['n']),
-                           promotes_inputs=['*'],
-                           promotes_outputs=['*'])
-        
-        self.add_subsystem(name='ComputeDuration',
-                           subsys=ComputeDuration(n=self.options['n']),
-                           promotes_inputs=['*'],
-                           promotes_outputs=['*'])
-
-        self.add_subsystem(name='ComputeTrajectories',
-                           subsys=ComputeTrajectories(n=self.options['n']),
-                           promotes_inputs=['*'],
-                           promotes_outputs=['*'])
-
-        self.set_input_defaults('vel',50 * np.ones(self.options['n']))
+        """
 
 
         self.nonlinear_solver = NewtonSolver()
         self.linear_solver = DirectSolver()
         #self.nonlinear_solver.options['iprint'] = 2
         self.nonlinear_solver.options['maxiter'] = 200
-        self.nonlinear_solver.options['solve_subsystems'] = True
+        self.nonlinear_solver.options['solve_subsystems'] = False
         self.nonlinear_solver.options['stall_limit'] = 4
-        self.nonlinear_solver.linesearch = om.BoundsEnforceLS()
+        #self.nonlinear_solver.linesearch = om.BoundsEnforceLS()
 
 
 if __name__ == "__main__":
@@ -145,19 +174,20 @@ if __name__ == "__main__":
     b = 20 # wing span
     AR = b**2 / S # wing aspect ratio
 
-
+    z0 = 400 * 0.3048 # initial altitude (m)
+    z1 = 30000 * 0.3048 # end altitude (m)
+    z = np.linspace(z0, z1, n) # altitude profile (m)
 
     # Prepare initial values
 
     # Position
-    ivc.add_output('x0', val=0, units='m', desc='initial position')
-    ivc.add_output('z0', val=400 * 0.3048, units='m', desc='initial altitude') # end of takeoff profile. flaps and gear up
     ivc.add_output('t0', val=0, units='s', desc='initial time')
-    ivc.add_output('z1', val = 30000 * 0.3048, units ='m', desc='end altitude')
+    ivc.add_output('z', val = z, units ='m', desc='altitude')
 
     # Velocity
-    ivc.add_output('v0', val=50, units='m/s', desc='initial velocity in longitudinal direction of body-fixed frame') # v2 speed assumption
+    #ivc.add_output('vel', val=50 * np.ones(n), units='m/s', desc='velocity in longitudinal direction of body-fixed frame') # v2 speed assumption
     ivc.add_output('gamma', val=0 * np.ones(n), units='rad', desc='flight path angle')
+    ivc.add_output('acc', val=0.1 * np.ones(n), units='m/s**2', desc='acceleration') # v2 speed assumption
 
     # Aircraft geometry
     ivc.add_output('S', val=S , units='m**2', desc='wing area')
@@ -169,6 +199,8 @@ if __name__ == "__main__":
     ivc.add_output('alpha_0', val=-3 * np.pi / 180 , units='rad', desc='zero-lift angle of attack')   
     ivc.add_output('alpha_i', val=2 * np.pi / 180 , units='rad', desc='incidence angle')   
     ivc.add_output('CLa', val=5.5, units='1/rad', desc='lift curve slope')
+    ivc.add_output('CL', val=0.7 * np.ones(n), units=None, desc='lift coefficient')
+
     ivc.add_output('Cd0', val=0.02, units=None, desc='zero-lift drag coefficient')
     ivc.add_output('e', val=0.8, units=None, desc='oswald efficiency factor')
 
@@ -188,7 +220,7 @@ if __name__ == "__main__":
     ivc.add_output('d_blade', val=1, units='m', desc='blade diameter')
     ivc.add_output('d_hub', val=0.2, units='m', desc='hub diameter')
 
-    ivc.add_output('unit_shaft_pow', val=500e3 * np.ones(n), units='W', desc='power generated per engine')
+    #ivc.add_output('unit_shaft_pow', val=500e3 * np.ones(n), units='W', desc='power generated per engine')
     ivc.add_output('psfc', val=0.0003 / 3600 * np.ones(n), units='kg/W/s', desc='power specific fuel consumption')
     ivc.add_output('num_turbines', val=2, units=None, desc='number of turbines')
     ivc.add_output('hy', val=0.1 * np.ones(n), units=None, desc='hybridization ratio')
@@ -214,7 +246,7 @@ if __name__ == "__main__":
     p.setup()
     # data = p.check_partials(method='fd')
 
-    om.n2(p)
+    #om.n2(p)
     p.run_model()
 
     """

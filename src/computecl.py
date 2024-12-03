@@ -62,12 +62,13 @@ class ComputeCL(om.ExplicitComponent):
 
         # Unpack constants
         g = self.options['g']
+        n = self.options['n']
 
         J['CL', 'mass'] = g * np.cos(gamma) / ( 0.5 * rho * vel**2 * S  )
-        J['CL', 'vel'] = -mass * g * np.cos(gamma) / ( 0.5 * rho * vel**3 * S  )
-        J['CL', 'rho'] = -mass * g * np.cos(gamma) / ( 0.5 * rho**2 * vel**2 * S  )
         J['CL', 'S'] = -mass * g * np.cos(gamma) / ( 0.5 * rho * vel**2 * S**2  )
-        J['CL', 'gamma'] = -mass * g * np.sin(gamma) / ( 0.5 * rho * vel**2 * S  )
+        J['CL', 'vel'] = np.eye(n) * -mass * g * np.cos(gamma) / ( 0.5 * rho * vel**3 * S  )
+        J['CL', 'rho'] = np.eye(n) * -mass * g * np.cos(gamma) / ( 0.5 * rho**2 * vel**2 * S  )
+        J['CL', 'gamma'] = np.eye(n) * -mass * g * np.sin(gamma) / ( 0.5 * rho * vel**2 * S  )
 
 if __name__ == "__main__":
     import openmdao.api as om
