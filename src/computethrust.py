@@ -19,13 +19,13 @@ class ComputeThrust(om.ExplicitComponent):
         self.add_input('acc', val= np.zeros(self.options['n']), desc='acceleration in longitudinal direction of body-fixed frame', units='m/s**2')
 
         # Outputs
-        self.add_output('total_thrust_gen', val= np.ones(self.options['n']), desc='thrust force', units='N')
+        self.add_output('total_thrust_req', val= np.ones(self.options['n']), desc='thrust force', units='N')
 
     def setup_partials(self):
-        self.declare_partials('total_thrust_gen', 'drag')    
-        self.declare_partials('total_thrust_gen', 'mass')
-        self.declare_partials('total_thrust_gen', 'gamma')
-        self.declare_partials('total_thrust_gen', 'acc')
+        self.declare_partials('total_thrust_req', 'drag')    
+        self.declare_partials('total_thrust_req', 'mass')
+        self.declare_partials('total_thrust_req', 'gamma')
+        self.declare_partials('total_thrust_req', 'acc')
 
     def compute(self, inputs, outputs):
 
@@ -42,7 +42,7 @@ class ComputeThrust(om.ExplicitComponent):
         thrust = mass * acc + Drag + mass * g * np.sin(gamma)
     
         # Pack outputs
-        outputs['total_thrust_gen'] = thrust
+        outputs['total_thrust_req'] = thrust
 
     def compute_partials(self, inputs, J):
 
@@ -56,10 +56,10 @@ class ComputeThrust(om.ExplicitComponent):
         n = self.options['n']
 
         # Compute partials
-        J['total_thrust_gen', 'drag'] = np.eye(n) 
-        J['total_thrust_gen', 'mass'] = acc 
-        J['total_thrust_gen', 'gamma'] = np.eye(n) * mass * g * np.cos(gamma)
-        J['total_thrust_gen', 'acc'] = mass * np.eye(n)
+        J['total_thrust_req', 'drag'] = np.eye(n) 
+        J['total_thrust_req', 'mass'] = acc 
+        J['total_thrust_req', 'gamma'] = np.eye(n) * mass * g * np.cos(gamma)
+        J['total_thrust_req', 'acc'] = mass * np.eye(n)
 
 
 if __name__ == "__main__":
@@ -93,4 +93,4 @@ if __name__ == "__main__":
     #om.n2(p)
     p.run_model()
 
-    print('thrust = ', p['ComputeThrust.total_thrust_gen'])
+    print('thrust = ', p['ComputeThrust.total_thrust_req'])

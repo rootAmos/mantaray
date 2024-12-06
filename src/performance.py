@@ -78,6 +78,11 @@ class Performance(om.Group):
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
 
+        self.add_subsystem(name='ComputeThrust',
+                           subsys=ComputeThrust(n=self.options['n'], g=self.options['g']),
+                           promotes_inputs=['*'],
+                           promotes_outputs=['*'])
+
 
         self.add_subsystem(name='ComputeInducedVelocity',
                            subsys=ComputeInducedVelocity(n=self.options['n']),
@@ -126,10 +131,7 @@ class Performance(om.Group):
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
         
-        self.add_subsystem(name='ComputeThrust',
-                           subsys=ComputeThrust(n=self.options['n'], g=self.options['g']),
-                           promotes_inputs=['*'],
-                           promotes_outputs=['*'])
+
 
         self.add_subsystem(name='ComputeTurbine',
                            subsys=ComputeTurbine(n=self.options['n']),
@@ -153,11 +155,11 @@ class Performance(om.Group):
 
         self.nonlinear_solver = NewtonSolver()
         self.linear_solver = DirectSolver()
-        #self.nonlinear_solver.options['iprint'] = 2
+        self.nonlinear_solver.options['iprint'] = 2
         self.nonlinear_solver.options['maxiter'] = 200
-        self.nonlinear_solver.options['solve_subsystems'] = False
+        self.nonlinear_solver.options['solve_subsystems'] = True
         self.nonlinear_solver.options['stall_limit'] = 4
-        #self.nonlinear_solver.linesearch = om.BoundsEnforceLS()
+        self.nonlinear_solver.linesearch = om.BoundsEnforceLS()
 
 
 if __name__ == "__main__":
@@ -176,17 +178,18 @@ if __name__ == "__main__":
 
     z0 = 400 * 0.3048 # initial altitude (m)
     z1 = 30000 * 0.3048 # end altitude (m)
-    z = np.linspace(z0, z1, n) # altitude profile (m)
 
     # Prepare initial values
 
     # Position
     ivc.add_output('t0', val=0, units='s', desc='initial time')
-    ivc.add_output('z', val = z, units ='m', desc='altitude')
+    ivc.add_output('x0', val=0, units='m', desc='initial distance in x-dir of earth fixed body frame')
+    ivc.add_output('z0', val = z0, units ='m', desc='initial altitude')
+    ivc.add_output('z1', val=z1, units='m', desc='final altitude')
 
     # Velocity
     #ivc.add_output('vel', val=50 * np.ones(n), units='m/s', desc='velocity in longitudinal direction of body-fixed frame') # v2 speed assumption
-    ivc.add_output('gamma', val=0 * np.ones(n), units='rad', desc='flight path angle')
+    ivc.add_output('gamma', val= 7 * np.pi/180 * np.ones(n), units='rad', desc='flight path angle')
     ivc.add_output('acc', val=0.1 * np.ones(n), units='m/s**2', desc='acceleration') # v2 speed assumption
 
     # Aircraft geometry
@@ -217,8 +220,8 @@ if __name__ == "__main__":
     ivc.add_output('batt_cap', val=1000 * 3600, units='J', desc='battery capacity')
     ivc.add_output('soc_0', val=1, units=None, desc='initial battery state of charge')
     ivc.add_output('num_motors', val=2, units=None, desc='number of engines')
-    ivc.add_output('d_blade', val=1, units='m', desc='blade diameter')
-    ivc.add_output('d_hub', val=0.2, units='m', desc='hub diameter')
+    ivc.add_output('d_blade', val=2.4, units='m', desc='blade diameter')
+    ivc.add_output('d_hub', val=0.5, units='m', desc='hub diameter')
 
     #ivc.add_output('unit_shaft_pow', val=500e3 * np.ones(n), units='W', desc='power generated per engine')
     ivc.add_output('psfc', val=0.0003 / 3600 * np.ones(n), units='kg/W/s', desc='power specific fuel consumption')
@@ -246,41 +249,43 @@ if __name__ == "__main__":
     p.setup()
     # data = p.check_partials(method='fd')
 
-    #om.n2(p)
+    om.n2(p)
     p.run_model()
 
-    """
+    
     
 
     # setup the optimization
-    p.driver = om.ScipyOptimizeDriver()
-    p.driver.options['optimizer'] = 'SLSQP'
+    # p.driver = om.ScipyOptimizeDriver()
+    # p.driver.options['optimizer'] = 'SLSQP'
 
-    p.model.add_design_var('unit_shaft_pow', lower=50e3, upper=2000e3)
-    p.model.add_design_var('hy', lower=0, upper=1)
-    p.model.add_design_var('gamma', lower=1 *np.pi/180, upper=40 *np.pi/180)
-    p.model.add_constraint('soc', lower=0)
+    # p.model.add_design_var('hy', lower=0, upper=1)
+    # p.model.add_design_var('acc', lower=0)
+
+    # p.model.add_design_var('gamma', lower=1 *np.pi/180, upper=40 *np.pi/180)
+    # p.model.add_constraint('soc', lower=0)
+    
 
     # Climb to 30,000 ft
-    p.model.add_objective('obj_func')
+    # p.model.add_objective('obj_func')
 
-    p.setup()
+    # p.setup()
+    #om.n2(p)
 
     # Set initial values.
     #p.set_val('unit_shaft_pow', 500e3 * np.ones(n))
     #p.set_val('hy', 0.5 * np.ones(n))
 
     # run the optimization
-    p.run_driver()
+    # p.run_driver()
 
     # Print the results
 
-    print('Ending Altitude (ft) = ', p['z1'] * 0.3048)
+    print('Ending Altitude (ft) = ', p['z'][-1] * 0.3048)
     print('Flight path angle profile (deg) = ', p['gamma'] * 180/np.pi)
     print('True airspeed profile (m/s) = ', p['vel'])  
-    print('Time profile (s) = ', p['t'])
     print('Battery state of charge profile (%) = ', p['soc'] * 100)
     print('Fuel consumption (kg) = ', p['obj_func'])
     print('Hybridization ratio profile (%) = ', p['hy'] * 100)
     print('Power profile (kW) = ', p['unit_shaft_pow']/1000)
-    """
+    

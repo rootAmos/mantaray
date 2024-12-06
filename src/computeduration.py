@@ -18,9 +18,12 @@ class ComputeDuration(om.ImplicitComponent):
         self.add_input('t0', val=0, desc='initial time', units='s')
 
         # Outputs
-        self.add_output('t1', val= 10 * 60, desc='time', units='s')
+        self.add_output('t1', val= 10 * 60, desc='time', units='s', lower = 10)
 
-        self.declare_partials('*', '*', method='fd')
+
+    def setup_partials(self):
+        self.declare_partials('t1', '*')
+
 
     def apply_nonlinear(self, inputs, outputs, residuals):
 
@@ -40,13 +43,46 @@ class ComputeDuration(om.ImplicitComponent):
         t = np.linspace(t0, t1, n).flatten()
 
         dt = np.diff(t)
-        dt = np.append(0, dt)
+        dt = np.append(dt, dt[-1])
 
         z = np.cumsum(vz * dt) + z0
         z1_calc = z[-1]
 
+        delta_z1 = z1 - z1_calc
+
         # Compute residuals
         residuals['t1'] = z1 - z1_calc
+
+    def linearize(self, inputs, outputs, partials):
+
+        # Unpack inputs
+        vz = inputs['vz']
+        z1 = inputs['z1']
+        z0 = inputs['z0']
+        t0 = inputs['t0']
+        t1 = outputs['t1']
+
+        # Unpack options
+        n = self.options['n']
+
+        t = np.linspace(t0, t1, n).flatten()
+
+        dt = np.diff(t)
+        dt = np.append(0, dt)
+
+        # Unpack outputs
+        t1 = outputs['t1']
+
+        partials['t1', 'vz'] = dt
+        partials['t1', 'z1'] = 1
+        partials['t1', 'z0'] = -1
+        partials['t1', 't0'] = -1
+        partials['t1', 't1'] = 1
+        
+        #self.inv_jac = 1.0 
+
+
+
 
 
 if __name__ == "__main__":
