@@ -13,7 +13,7 @@ class ComputeTimeStep(om.ExplicitComponent):
 
         # Inputs 
         self.add_input('t0', val= 0, desc='initial time', units='s')
-        self.add_input('t1', val= 0, desc='end time', units='s')
+        self.add_input('t1', val= 10 * 60, desc='end time', units='s')
 
 
         # Outputs
@@ -42,8 +42,8 @@ class ComputeTimeStep(om.ExplicitComponent):
 
     def compute_partials(self, inputs, J):
 
-        J['dt', 't0'] = 1
-        J['dt', 't1'] = -1
+        J['dt', 't0'] = -1
+        J['dt', 't1'] = 1
 
 
 if __name__ == "__main__":

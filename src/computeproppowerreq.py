@@ -93,12 +93,12 @@ class ComputePropPowerReq(om.ExplicitComponent):
 
         J['unit_shaft_pow', 'total_thrust_req'] = np.eye(n) * (vel + 1.5 * total_thrust_req**0.5 / np.sqrt(2 * rho * diskarea)) / num_motors / eta_prop / eta_prplsv
         J['unit_shaft_pow', 'vel'] = np.eye(n) * unit_thrust_req / eta_prop / eta_prplsv
-        J['unit_shaft_pow', 'd_blade'] = unit_thrust_req ** 1.5 * (-0.5)*  np.sqrt(2 * rho *diskarea)**(-1.5) * d_blade_d_diskarea/ eta_prop / eta_prplsv
-        J['unit_shaft_pow', 'd_hub'] = unit_thrust_req ** 1.5 * (-0.5)*  np.sqrt(2 * rho *diskarea)**(-1.5) * d_hub_d_diskarea/ eta_prop / eta_prplsv
-        J['unit_shaft_pow', 'rho'] = np.eye(n) * unit_thrust_req ** 1.5/ np.sqrt(2 * rho * diskarea)*(-1.5) * ( 2 * diskarea) / eta_prop / eta_prplsv
+        J['unit_shaft_pow', 'd_blade'] = unit_thrust_req ** 1.5 * (-0.5)*  (2 * rho *diskarea)**(-1.5) * d_blade_d_diskarea/ eta_prop / eta_prplsv
+        J['unit_shaft_pow', 'd_hub'] = unit_thrust_req ** 1.5 * (-0.5)*  (2 * rho *diskarea)**(-1.5) * d_hub_d_diskarea/ eta_prop / eta_prplsv
+        J['unit_shaft_pow', 'rho'] = np.eye(n) * unit_thrust_req ** 1.5 * (-0.5) *  (2 * rho *diskarea)**(-1.5) * ( 2 * diskarea) / eta_prop / eta_prplsv
         J['unit_shaft_pow', 'eta_prop'] =  -unit_propulsive_pow_req / eta_prop**2 / eta_prplsv
         J['unit_shaft_pow', 'eta_prplsv'] = np.eye(n) * -unit_propulsive_pow_req / eta_prop / eta_prplsv**2
-        J['unit_shaft_pow', 'num_motors'] =  -vel/ eta_prop / eta_prplsv / num_motors**2  +  0.5 * num_motors ** (-0.5) * unit_thrust_req ** 1.5/ np.sqrt(2 * rho * diskarea) / eta_prop / eta_prplsv
+        J['unit_shaft_pow', 'num_motors'] =  -total_thrust_req*vel/ eta_prop / eta_prplsv / num_motors**2  -  1.5 * unit_thrust_req**0.5  * total_thrust_req/ num_motors **2 / np.sqrt(2 * rho * diskarea) / eta_prop / eta_prplsv
 
 
 if __name__ == "__main__":

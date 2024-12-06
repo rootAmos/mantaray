@@ -18,7 +18,7 @@ class ComputeAofA(om.ExplicitComponent):
         self.add_input('CLa', val=1, desc='lift curve slope', units='1/rad')
         self.add_input('alpha_0', val=0, desc='zero lift angle of attack', units='rad')
         self.add_input('alpha_i', val=0, desc='incidence angle', units='rad')
-        self.add_input('CL', val= 0.7* np.ones(self.options['n']), desc='lift coefficient', units=None)
+        self.add_input('CL', val=  np.ones(self.options['n']), desc='lift coefficient', units=None)
 
         # Outputs
         self.add_output('aofa', val= np.ones(self.options['n']), desc='angle of attack', units='rad')

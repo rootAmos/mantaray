@@ -7,7 +7,7 @@ jax.config.update("jax_enable_x64", True)
 
 
 
-class ComputeVelocity(om.ExplicitComponent):
+class ComputeVelocityFromCL(om.ExplicitComponent):
     """
     Compute the velocity of an aircraft from lift coefficient. Ignores influence of HTP .
     """
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     ivc.add_output('CL', 0.7 * np.ones(n), units=None)   
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
-    model.add_subsystem('ComputeVelocity', ComputeVelocity(n=n), promotes_inputs=['*'])
+    model.add_subsystem('ComputeVelocityFromCL', ComputeVelocityFromCL(n=n), promotes_inputs=['*'])
 
     model.nonlinear_solver = om.NewtonSolver()
     model.linear_solver = om.DirectSolver()
@@ -124,4 +124,4 @@ if __name__ == "__main__":
     p.run_driver()
     """
 
-    print('vel = ', p['ComputeVelocity.vel'])
+    print('vel = ', p['ComputeVelocityFromCL.vel'])

@@ -54,7 +54,11 @@ class ComputeInducedVelocity(om.ExplicitComponent):
         unit_thrust_req = total_thrust_req / num_motors  
 
         # Compute induced airspeed [1] Eq 15-76
-        v_ind = 0.5 * ( - vel + np.sqrt( vel**2 + unit_thrust_req / (0.5 * rho * diskarea) ) )
+        v_ind = 0.5 * ( - vel + ( vel**2 + 2*unit_thrust_req / (0.5 * rho * diskarea) ) **(0.5) )
+
+        #print('vel (m/s) = ', vel)
+        #print('unit_thrust_req (N) = ', unit_thrust_req)
+
 
 
         # Pack outputs
@@ -80,9 +84,9 @@ class ComputeInducedVelocity(om.ExplicitComponent):
 
 
         J['v_ind', 'total_thrust_req'] = np.eye(n) * (0.5 * 0.5 * ( vel**2 + unit_thrust_req / (0.5 * rho * diskarea) ) **(-0.5) * ( 1 / (0.5 * rho * diskarea * num_motors) ) )
-        J['v_ind', 'vel'] = np.eye(n) * (-0.5 + vel / np.sqrt( vel**2 + unit_thrust_req / (0.5 * rho * diskarea) ) )
-        J['v_ind', 'd_blade'] =  (0.5 * 0.5 * ( vel**2 + unit_thrust_req / (0.5 * rho * diskarea) ) **(-0.5) * ( -d_blade_d_diskarea / (0.5 * rho * diskarea * num_motors) ) )
-        J['v_ind', 'd_hub'] = (0.5 * 0.5 * ( vel**2 + unit_thrust_req / (0.5 * rho * diskarea) ) **(-0.5) * ( -d_hub_d_diskarea / (0.5 * rho * diskarea * num_motors) ) )
+        J['v_ind', 'vel'] = np.eye(n) * 0.5*(-1 + 0.5*( vel**2 + 2*unit_thrust_req / (0.5 * rho * diskarea))**(-0.5) * 2 )
+        J['v_ind', 'd_blade'] =  (0.5 * 0.5 * ( vel**2 + unit_thrust_req / (0.5 * rho * diskarea) ) **(-0.5) * (  unit_thrust_req / (0.5 * rho * diskarea * num_motors) ) * -diskarea ** (-2) * d_blade_d_diskarea )
+        J['v_ind', 'd_hub'] = (0.5 * 0.5 * ( vel**2 + unit_thrust_req / (0.5 * rho * diskarea) ) **(-0.5) * ( -unit_thrust_req / (0.5 * rho * diskarea * num_motors) ) * -diskarea ** (-2) * d_hub_d_diskarea )
         J['v_ind', 'rho'] = np.eye(n) * (0.5 * 0.5 * ( vel**2 + unit_thrust_req / (0.5 * rho * diskarea) ) **(-0.5) * ( -unit_thrust_req / (0.5 * rho **2 * diskarea * num_motors) ) )
         J['v_ind', 'num_motors'] = (0.5 * 0.5 * ( vel**2 + unit_thrust_req / (0.5 * rho * diskarea) ) **(-0.5) * ( -unit_thrust_req / (0.5 * rho * diskarea * num_motors **2) ) )
 

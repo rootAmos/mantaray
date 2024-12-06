@@ -19,11 +19,11 @@ class ComputeCL(om.ExplicitComponent):
         self.add_input('mass', val= 1, desc='mass', units='kg')
         self.add_input('vel', val= 100*np.ones(self.options['n']), desc='true airspeed', units='m/s')
         self.add_input('rho', val= np.ones(self.options['n']), desc='air density', units='kg/m**3')        
-        self.add_input('gamma', val= np.ones(self.options['n']), desc='flight path angle', units='rad')
+        self.add_input('gamma', val=  np.pi/180 * np.ones(self.options['n']), desc='flight path angle', units='rad')
         self.add_input('S', val= 30, desc='wing area', units='m**2')
 
         # Outputs
-        self.add_output('CL', val= 0.7* np.ones(self.options['n']), desc='lift coefficient', units=None)
+        self.add_output('CL', val=  np.ones(self.options['n']), desc='lift coefficient', units=None)
 
     def setup_partials(self):
         self.declare_partials('CL', 'mass')

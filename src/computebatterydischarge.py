@@ -32,8 +32,8 @@ class ComputeBatteryDischarge(om.ExplicitComponent):
         # Outputs
         self.add_output('soc', val=np.ones(self.options['n']), desc='battery state of charge', units=None)
 
-
-        self.declare_partials('*', '*', method='fd')
+    def setup_partials(self):
+        self.declare_partials('soc', '*', method='fd')
 
     def compute(self, inputs, outputs):
 
@@ -60,6 +60,37 @@ class ComputeBatteryDischarge(om.ExplicitComponent):
 
         # Pack outputs
         outputs['soc'] = soc   
+
+    def compute_partials(self, inputs, J):
+
+        # Unpack inputs
+        eta_batt = inputs['eta_batt']
+        eta_motor = inputs['eta_motor']
+        eta_pe = inputs['eta_pe']
+        eta_cbl = inputs['eta_cbl']
+        unit_shaft_pow = inputs['unit_shaft_pow']
+        num_motors = inputs['num_motors']
+        dt = inputs['dt']
+        soc_0 = inputs['soc_0']
+        batt_cap__J = inputs['batt_cap']
+        hy = inputs['hy']
+
+        n = self.options['n']
+
+
+        # Battery power required (W)
+        batt_pow_req = unit_shaft_pow * num_motors / eta_batt / eta_motor / eta_pe / eta_cbl * (1-hy)
+
+        
+        # Battery discharge (J)
+        batt_usage__J = np.cumsum(batt_pow_req * dt)
+
+      
+        J['soc', 'unit_shaft_pow'] = np.eye(n) -num_motors / eta_batt / eta_motor / eta_pe / eta_cbl * (1-hy) / batt_cap__J
+        J['soc', 'num_motors'] = -unit_shaft_pow / eta_batt / eta_motor / eta_pe / eta_cbl * (1-hy) / batt_cap__J
+        J['soc', 'dt'] = np.eye(n) -batt_pow_req / batt_cap__J
+        J['soc', 'soc_0'] = 1 
+        J['soc', 'batt_cap'] = -batt_usage__J / batt_cap__J**2
 
 
 

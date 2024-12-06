@@ -59,8 +59,8 @@ class ComputePropEta(om.ExplicitComponent):
         v3 = vel + 2 * v_ind  
 
 
-        J['eta_prplsv', 'vel'] = np.eye(n) * -2 * (1 + v3/vel)**(-2) * 2 * v_ind
-        J['eta_prplsv', 'v_ind'] = np.eye(n) * -2 * (1 + v3/vel)**(-2) * 2 / vel
+        J['eta_prplsv', 'vel'] = np.eye(n) * 4 * v_ind/(2 * vel + 2 * v_ind)**2
+        J['eta_prplsv', 'v_ind'] = np.eye(n) -4 * vel/(2 * vel + 2 * v_ind)**2
         
 
 

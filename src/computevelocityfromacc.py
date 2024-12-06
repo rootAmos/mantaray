@@ -3,7 +3,7 @@ import openmdao.api as om
 
 
 
-class ComputeVelocities(om.ExplicitComponent):
+class ComputeVelocityFromAcc(om.ExplicitComponent):
 
     def initialize(self):
         self.options.declare('n', default=1, desc='number of data points')
@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
-    model.add_subsystem('ComputeVelocity', ComputeVelocities(n=n), promotes_inputs=['*'])
+    model.add_subsystem('ComputeVelocityFromAcc', ComputeVelocityFromAcc(n=n), promotes_inputs=['*'])
 
     model.nonlinear_solver = om.NewtonSolver()
     model.linear_solver = om.DirectSolver()
@@ -84,4 +84,4 @@ if __name__ == "__main__":
     #om.n2(p)
     p.run_model()
 
-    print('vel = ', p['ComputeVelocity.vel'])
+    print('vel = ', p['ComputeVelocityFromAcc.vel'])

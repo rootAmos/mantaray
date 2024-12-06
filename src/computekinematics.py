@@ -12,7 +12,7 @@ class ComputeKinematics(om.ExplicitComponent):
     def setup(self):
 
         # Inputs    
-        self.add_input('gamma', val= np.ones(self.options['n']) * 0, desc='flight path angle', units='rad')
+        self.add_input('gamma', val= np.ones(self.options['n']) * np.pi/180, desc='flight path angle', units='rad')
         self.add_input('vel', val= np.ones(self.options['n']) * 0, desc='true airspeed', units='m/s')
 
 

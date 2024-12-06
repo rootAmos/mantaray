@@ -3,7 +3,7 @@ import openmdao.api as om
 
 
 
-class ComputeThrust(om.ExplicitComponent):
+class ComputeThrustFromAcc(om.ExplicitComponent):
 
     def initialize(self):
         self.options.declare('n', default=1, desc='number of data points')
@@ -15,7 +15,7 @@ class ComputeThrust(om.ExplicitComponent):
         # Inputs    
         self.add_input('drag', val= np.ones(self.options['n']), desc='drag force', units='N')
         self.add_input('mass', val=1, desc='mass', units='kg')
-        self.add_input('gamma', val= np.ones(self.options['n']), desc='flight path angle', units='rad')
+        self.add_input('gamma', val= np.ones(self.options['n']) * np.pi/180, desc='flight path angle', units='rad')
         self.add_input('acc', val= np.zeros(self.options['n']), desc='acceleration in longitudinal direction of body-fixed frame', units='m/s**2')
 
         # Outputs
@@ -78,7 +78,7 @@ if __name__ == "__main__":
 
 
     model.add_subsystem('Indeps', ivc, promotes_outputs=['*'])
-    model.add_subsystem('ComputeThrust', ComputeThrust(n=n), promotes_inputs=['*'])
+    model.add_subsystem('ComputeThrustFromAcc', ComputeThrustFromAcc(n=n), promotes_inputs=['*'])
 
     model.nonlinear_solver = om.NewtonSolver()
     model.linear_solver = om.DirectSolver()
@@ -93,4 +93,4 @@ if __name__ == "__main__":
     #om.n2(p)
     p.run_model()
 
-    print('thrust = ', p['ComputeThrust.total_thrust_req'])
+    print('thrust = ', p['ComputeThrustFromAcc.total_thrust_req'])

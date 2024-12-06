@@ -12,13 +12,14 @@ class ComputeDuration(om.ImplicitComponent):
     def setup(self):
 
         # Inputs    
-        self.add_input('vz', val= np.ones(self.options['n']) * 0, desc='true airspeed', units='m/s')
-        self.add_input('z1', val= 1, desc='time step', units='m')
-        self.add_input('z0', val=0, desc='end position in the z-axis', units='m')
+        self.add_input('vz', val= np.ones(self.options['n']) * 0, desc='vertical velocity', units='m/s')
+        self.add_input('z1', val= 1, desc='end position in the z-axis', units='m')
+        self.add_input('z0', val=0, desc='initial position in the z-axis', units='m')
         self.add_input('t0', val=0, desc='initial time', units='s')
 
         # Outputs
         self.add_output('t1', val= 10 * 60, desc='time', units='s', lower = 10)
+
 
 
     def setup_partials(self):
@@ -33,7 +34,6 @@ class ComputeDuration(om.ImplicitComponent):
         z0 = inputs['z0']
         t0 = inputs['t0']
 
-        # Unpack outputs
         t1 = outputs['t1']
 
         # unpack options
@@ -48,10 +48,14 @@ class ComputeDuration(om.ImplicitComponent):
         z = np.cumsum(vz * dt) + z0
         z1_calc = z[-1]
 
-        delta_z1 = z1 - z1_calc
+        # print('z1_calc (ft) = ', z1_calc / 0.3048)
+        # print('z1 (ft) = ', z1 / 0.3048)
+        # print('t1 (min) = ', t1/60)
 
         # Compute residuals
         residuals['t1'] = z1 - z1_calc
+
+
 
     def linearize(self, inputs, outputs, partials):
 
@@ -73,14 +77,13 @@ class ComputeDuration(om.ImplicitComponent):
         # Unpack outputs
         t1 = outputs['t1']
 
-        partials['t1', 'vz'] = dt
+        partials['t1', 'vz'] = -dt
         partials['t1', 'z1'] = 1
         partials['t1', 'z0'] = -1
-        partials['t1', 't0'] = -1
-        partials['t1', 't1'] = 1
+        partials['t1', 't0'] = vz[0]
+        partials['t1', 't1'] = -vz[-1]
         
         #self.inv_jac = 1.0 
-
 
 
 

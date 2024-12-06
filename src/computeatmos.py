@@ -28,33 +28,65 @@ class ComputeAtmos(om.ExplicitComponent):
         self.add_output('temp', val= np.ones(self.options['n']), desc='air temperature', units='degC')
         self.add_output('pressure', val= np.ones(self.options['n']), desc='air pressure', units='Pa')
 
-        self.declare_partials('*', '*', method='fd')
+    def setup_partials(self):
+
+        self.declare_partials('rho', 'z')
+        self.declare_partials('temp', 'z')
+        self.declare_partials('pressure', 'z')
 
     def compute(self, inputs, outputs):
 
         # Unpack inputs 
         z = inputs['z'] #  altitude (m)
     
-        # Temperature (degC)
-        temp = np.where(z > 25000, -131.21 + 0.00299 * z, 
-                        np.where(z > 11000, -56.55, 15.04 - 0.00649 * z))
 
+        # Temperature (degC)
+        temp = 15.04 - 0.00649 * z
+
+        """
+        temp = np.where(z > 25000, -131.21 + 0.00299 * z,
+                        np.where(z > 11000, -56.55, 15.04 - 0.00649 * z))
+        """
+        
+        
         # Pressure (kPa)
+        pressure = 101.29*((temp+273.1)/288.08)**5.256
+        
+        """
         pressure = np.where(z > 25000, 2.488*( (temp+273.1) /216.6)**(-11.388),
                             np.where(z > 11000, 22.65*np.exp(1.73-0.000157*z), 
                                      101.29*((temp+273.1)/288.08)**5.256))
+        """
         
         # Density (kg/m^3)
-        
         rho = pressure/(0.2869*(temp+273.1))
 
 
         # Speed of sound (m/s)
-        c = (1.4*8.314/(28.96/1000)*(temp+273.1))
+        c = np.sqrt(1.4*8.314/(28.96/1000)*(temp+273.1))
 
         outputs['rho'] = rho
         outputs['temp'] = temp
         outputs['pressure'] = pressure
+
+    def compute_partials(self, inputs, J):
+
+        z = inputs['z']
+        n = self.options['n']
+
+        
+        temp = 15.04 - 0.00649 * z
+        
+        pressure = 101.29*((temp+273.1)/288.08)**5.256
+
+
+
+        J['temp', 'z'] =  np.eye(n) * -0.00649
+        J['pressure', 'z'] =  np.eye(n) * 101.29*5.256*((temp+273.1)/288.08)**4.256 * (-0.00649)/288.08
+        J['rho', 'z'] = np.eye(n) * (0.012*(1.0 - 2.25e-5*z)**(532/125))/(0.00186*z - 82.7) + np.eye(n) * (0.189*(1.0 - 2.25e-5*z)**(657/125))/(0.00186*z - 82.7)**2
+
+
+
 
 if __name__ == "__main__":
     import openmdao.api as om
