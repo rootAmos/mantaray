@@ -1,6 +1,6 @@
 import numpy as np  
 import openmdao.api as om
-
+import pandas as pd
 
 
 class ComputeCD(om.ExplicitComponent):
