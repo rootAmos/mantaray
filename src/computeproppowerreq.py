@@ -97,7 +97,7 @@ class ComputePropPowerReq(om.ExplicitComponent):
         # Compute station 3 velocity [1] Eq 15-73
         v3 = vel + 2 * v_ind
 
-        # Compute propulsive efficiency [1] Eq 15-77
+        # Compute propulsive efficiency [1] Eq 15-77.
         eta_prplsv = 2 / (1 + v3/ (1e-9 + vel))   
 
         propulsive_power_unit = thrust_unit * vel  + thrust_unit ** 1.5/ np.sqrt(2 * rho * diskarea)
