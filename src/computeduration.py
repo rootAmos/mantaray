@@ -48,6 +48,9 @@ class ComputeDuration(om.ImplicitComponent):
         z = np.cumsum(vz * dt) + z0
         z1_calc = z[-1]
 
+        if np.any(z < 1e-3):
+            print('Negative z detected')
+
         # print('z1_calc (ft) = ', z1_calc / 0.3048)
         # print('z1 (ft) = ', z1 / 0.3048)
         # print('t1 (min) = ', t1/60)

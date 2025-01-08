@@ -26,7 +26,7 @@ class ComputeInducedVelocity(om.ExplicitComponent):
         self.add_input('num_motors', val=1, desc='number of engines', units=None)
 
         # Outputs
-        self.add_output('v_ind', val= np.ones(self.options['n']), desc='induced velocity', units='m/s')
+        self.add_output('v_ind', val= np.ones(self.options['n']), desc='induced velocity', units='m/s', lower=1e-3)
 
 
     def setup_partials(self):
@@ -51,7 +51,11 @@ class ComputeInducedVelocity(om.ExplicitComponent):
 
         diskarea = np.pi * ((d_blade/2)**2 - (d_hub/2)**2)
 
-        unit_thrust_req = total_thrust_req / num_motors  
+        unit_thrust_req = total_thrust_req / num_motors 
+
+        rho = np.maximum(rho, 1e-6)
+        unit_thrust_req = np.maximum(unit_thrust_req, 1e-6)
+        vel = np.maximum(vel, 1e-6)
 
         # Compute induced airspeed [1] Eq 15-76
         v_ind = 0.5 * ( - vel + ( vel**2 + 2*unit_thrust_req / (0.5 * rho * diskarea) ) **(0.5) )

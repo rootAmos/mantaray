@@ -35,6 +35,13 @@ class ComputeKinematics(om.ExplicitComponent):
         # Compute horizontal and vertical velocities in earth frame
         vx = vel * np.cos(gamma)
         vz = vel * np.sin(gamma)
+
+        if np.any(vx < 1e-3):
+            print('Negative horizontal velocities detected')
+        if np.any(vz < 1e-3):
+            print('Negative vertical velocities detected')
+        
+        vx = np.where(vx < 1e-3, 1e-3, vx)
         
         # Pack outputs
         outputs['vx'] = vx

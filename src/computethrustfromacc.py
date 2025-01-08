@@ -19,13 +19,13 @@ class ComputeThrustFromAcc(om.ExplicitComponent):
         self.add_input('acc', val= np.zeros(self.options['n']), desc='acceleration in longitudinal direction of body-fixed frame', units='m/s**2')
 
         # Outputs
-        self.add_output('total_thrust_req', val= np.ones(self.options['n']), desc='thrust force', units='N')
+        self.add_output('thrust_total', val= np.ones(self.options['n']), desc='thrust force', units='N', lower=1e-3)
 
     def setup_partials(self):
-        self.declare_partials('total_thrust_req', 'drag')    
-        self.declare_partials('total_thrust_req', 'mass')
-        self.declare_partials('total_thrust_req', 'gamma')
-        self.declare_partials('total_thrust_req', 'acc')
+        self.declare_partials('thrust_total', 'drag')    
+        self.declare_partials('thrust_total', 'mass')
+        self.declare_partials('thrust_total', 'gamma')
+        self.declare_partials('thrust_total', 'acc')
 
     def compute(self, inputs, outputs):
 
@@ -40,9 +40,12 @@ class ComputeThrustFromAcc(om.ExplicitComponent):
 
         # Accelerations in the body-fixed frame
         thrust = mass * acc + Drag + mass * g * np.sin(gamma)
+
+        # Check for negative thrust
+        thrust = np.where(thrust < 1e-3, 1e-3, thrust)
     
         # Pack outputs
-        outputs['total_thrust_req'] = thrust
+        outputs['thrust_total'] = thrust
 
     def compute_partials(self, inputs, J):
 
@@ -56,10 +59,10 @@ class ComputeThrustFromAcc(om.ExplicitComponent):
         n = self.options['n']
 
         # Compute partials
-        J['total_thrust_req', 'drag'] = np.eye(n) 
-        J['total_thrust_req', 'mass'] = acc 
-        J['total_thrust_req', 'gamma'] = np.eye(n) * mass * g * np.cos(gamma)
-        J['total_thrust_req', 'acc'] = mass * np.eye(n)
+        J['thrust_total', 'drag'] = np.eye(n) 
+        J['thrust_total', 'mass'] = acc 
+        J['thrust_total', 'gamma'] = np.eye(n) * mass * g * np.cos(gamma)
+        J['thrust_total', 'acc'] = mass * np.eye(n)
 
 
 if __name__ == "__main__":
@@ -93,4 +96,4 @@ if __name__ == "__main__":
     #om.n2(p)
     p.run_model()
 
-    print('thrust = ', p['ComputeThrustFromAcc.total_thrust_req'])
+    print('thrust = ', p['ComputeThrustFromAcc.thrust_total'])

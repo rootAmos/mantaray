@@ -34,6 +34,13 @@ class ComputeVelocityFromAcc(om.ExplicitComponent):
         # Compute velocity in the body-fixed frame
         vel = np.cumsum(acc * dt) + v0
 
+        #print('vel (m/s) = ', vel)
+
+        if np.any(vel < 1e-3):
+            print('Negative velocities detected')
+
+        # Check for negative velocities
+        #vel = np.where(vel < 1e-3, 1e-3, vel)
     
         # Pack outputs
         outputs['vel'] = vel

@@ -17,7 +17,7 @@ class ComputeTimeStep(om.ExplicitComponent):
 
 
         # Outputs
-        self.add_output('dt', val= np.ones(self.options['n']), desc='time step', units='s')
+        self.add_output('dt', val= np.ones(self.options['n']), desc='time step', units='s', lower=1e-3)
 
     def setup_partials(self):
         self.declare_partials('dt', 't0')
@@ -35,6 +35,9 @@ class ComputeTimeStep(om.ExplicitComponent):
         t = np.linspace(t0, t1, n).flatten()
         dt = np.diff(t)
         dt = np.append(0, dt)
+
+        if np.any(dt < 0):
+            print('Negative time steps detected')
 
 
         # Pack outputs

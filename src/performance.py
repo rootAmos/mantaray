@@ -84,18 +84,7 @@ class Performance(om.Group):
                            subsys=ComputeThrustFromAcc(n=self.options['n'], g=self.options['g']),
                            promotes_inputs=['*'],
                            promotes_outputs=['*'])
-
-
-        self.add_subsystem(name='ComputeInducedVelocity',
-                           subsys=ComputeInducedVelocity(n=self.options['n']),
-                           promotes_inputs=['*'],
-                           promotes_outputs=['*'])
-        
-        self.add_subsystem(name='ComputePropEta',
-                           subsys=ComputePropEta(n=self.options['n']),
-                           promotes_inputs=['*'],
-                           promotes_outputs=['*'])
-        
+       
         self.add_subsystem(name='ComputePropPowerReq',
                            subsys=ComputePropPowerReq(n=self.options['n']),
                            promotes_inputs=['*'],
@@ -146,7 +135,7 @@ class Performance(om.Group):
         self.nonlinear_solver.options['solve_subsystems'] = True
         self.nonlinear_solver.options['stall_limit'] = 4
         self.nonlinear_solver.linesearch = om.BoundsEnforceLS()
-        self.nonlinear_solver.options['rtol'] = 1e-2
+        self.nonlinear_solver.options['rtol'] = 1e-4
 
 
 
@@ -176,7 +165,7 @@ if __name__ == "__main__":
 
     # Velocity
     #ivc.add_output('vel', val=50 * np.ones(n), units='m/s', desc='velocity in longitudinal direction of body-fixed frame') # v2 speed assumption
-    ivc.add_output('gamma', val= 4 * np.pi/180 * np.ones(n), units='rad', desc='flight path angle')
+    #ivc.add_output('gamma', val= 4 * np.pi/180 * np.ones(n), units='rad', desc='flight path angle')
     ivc.add_output('acc', val=0.05 * np.ones(n), units='m/s**2', desc='acceleration') # v2 speed assumption
 
     # Aircraft geometry
@@ -224,7 +213,7 @@ if __name__ == "__main__":
 
     # set model settings
     p.model.nonlinear_solver = om.NewtonSolver()
-    p.model.linear_solver = om.LinearBlockGS()
+    p.model.linear_solver = om.DirectSolver()
 
     p.model.nonlinear_solver.options['iprint'] = 2
     p.model.nonlinear_solver.options['maxiter'] = 200
@@ -236,7 +225,7 @@ if __name__ == "__main__":
     p.setup()
     # data = p.check_partials(method='fd')
 
-    om.n2(p)
+    #om.n2(p)
     p.run_model()
     #p.check_partials(compact_print=True)
 
@@ -259,9 +248,9 @@ if __name__ == "__main__":
 
     # Setting initial values
     #p.set_val('hy', 0.5 * np.ones(n))
-    #p.set_val('gamma', 7 * np.pi/180 * np.ones(n))
+    p.set_val('gamma', 7 * np.pi/180 * np.ones(n))
     #p.set_val('acc', 0.05 * np.ones(n))
-    p['acc'] = 0.05 * np.ones(n)
+    #p['acc'] = 0.05 * np.ones(n)
 
     # Climb to 30,000 ft
 
@@ -273,9 +262,10 @@ if __name__ == "__main__":
 
     # run the optimization
     p.run_driver()
+    """
 
     # Print the results
-    """
+    
 
     print('Ending Altitude (ft) = ', p['z'][-1] / 0.3048)
     print('Time (min) = ', p['t1']/60)
